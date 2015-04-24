@@ -1,6 +1,8 @@
 #include "chartreuse.h"
 #include "chartreuse_manipulator.h"
 
+#include <limits>
+
 #include <maya/MStatus.h>
 #include <maya/MFnPlugin.h>
 #include <maya/MFnSkinCluster.h>
@@ -9,8 +11,13 @@
 #include <maya/MSelectionList.h>
 #include <maya/MFnMesh.h>
 #include <maya/MFnRotateManip.h>
+#include <maya/MFnSingleIndexedComponent.h>
 
-ChartreuseContext::ChartreuseContext() {}
+ChartreuseContext::ChartreuseContext() : _maxInfluences(NULL) {}
+
+ChartreuseContext::~ChartreuseContext() {
+  delete[] _maxInfluences;
+}
 
 void ChartreuseContext::forceExit() {
   MGlobal::executeCommand("setToolTo $gSelect");
@@ -19,19 +26,110 @@ void ChartreuseContext::forceExit() {
 void ChartreuseContext::select(const MDagPath& dagPath) {
   _selection = dagPath;
 
+  MDagPath oldHighlight;
+  if (_chartreuseManip) {
+    // Preserve old highlight while transitioning manipulators.
+    oldHighlight = _chartreuseManip->highlightedDagPath();
+  }
+  deleteManipulators();
+  addChartreuseManipulator(oldHighlight);
+
   MFnRotateManip rotateManip(_rotateManip);
   if (_selection.hasFn(MFn::kTransform)) {
-    rotateManip.setManipScale(ROTATE_MANIP_SCALE);
-    rotateManip.setVisible(true);
+    MFnRotateManip rotateManip;
+    _rotateManip = rotateManip.create();
+
+    MFnTransform selectionXform(_selection);
+    MPlug rotationPlug = selectionXform.findPlug("rotate");
+    MPlug rotationCenterPlug = selectionXform.findPlug("rotatePivot");
+
+    rotateManip.connectToRotationPlug(rotationPlug);
+    rotateManip.connectToRotationCenterPlug(rotationCenterPlug);
     rotateManip.displayWithNode(_selection.node());
+    rotateManip.setManipScale(ROTATE_MANIP_SCALE);
+    rotateManip.setRotateMode(MFnRotateManip::kObjectSpace);
+    addManipulator(_rotateManip);
   } else {
-    rotateManip.setManipScale(0.001f);
-    rotateManip.setVisible(false);
+    _rotateManip = MObject::kNullObj;
   }
 }
 
 MDagPath ChartreuseContext::selectionDagPath() const {
   return _selection;
+}
+
+void ChartreuseContext::calculateMaxInfluences(MDagPath dagPath,
+  MObject skinObj) {
+  MFnMesh mesh(dagPath);
+  MFnSkinCluster skin(skinObj);
+
+  int numPolygons = mesh.numPolygons();
+  delete[] _maxInfluences;
+  _maxInfluences = new unsigned int[numPolygons];
+
+  for (int i = 0; i < numPolygons; ++i) {
+    MIntArray polyVertices;
+    mesh.getPolygonVertices(i, polyVertices);
+
+    MFnSingleIndexedComponent comp;
+    MObject compObj = comp.create(MFn::kMeshVertComponent);
+    comp.addElements(polyVertices);
+
+    MDoubleArray weights;
+    unsigned int numInfluences;
+    skin.getWeights(dagPath, compObj, weights, numInfluences);
+
+    int count = 0;
+    double* weightSums = new double[numInfluences];
+    for (int influence = 0; influence < numInfluences; ++influence) {
+      weightSums[influence] = 0.0f;
+    }
+    for (int vtx = 0; vtx < polyVertices.length(); ++vtx) {
+      for (int influence = 0; influence < numInfluences; ++influence) {
+        weightSums[influence] += weights[count];
+        count++;
+      }
+    }
+
+    double maxWeight = std::numeric_limits<double>::min();
+    int maxIndex = 0;
+    for (int influence = 0; influence < numInfluences; ++influence) {
+      if (weightSums[influence] > maxWeight) {
+        maxWeight = weightSums[influence];
+        maxIndex = influence;
+      }
+    }
+
+    delete[] weightSums;
+    _maxInfluences[i] = maxIndex;
+  }
+}
+
+const unsigned int* ChartreuseContext::maxInfluences() const {
+  return _maxInfluences;
+}
+
+MDagPath ChartreuseContext::meshDagPath() const {
+  return _meshDagPath;
+}
+
+MObject ChartreuseContext::skinObject() const {
+  return _skinObject;
+}
+
+bool ChartreuseContext::addChartreuseManipulator(MDagPath newHighlight) {
+  MObject chartreuseManipObj;
+  MStatus err;
+  _chartreuseManip = (ChartreuseManipulator*)MPxManipulatorNode::newManipulator(
+    "ChartreuseManipulator", chartreuseManipObj, &err);
+
+  if (err.error()) {
+    return false;
+  }
+
+  _chartreuseManip->setup(this, newHighlight);
+  addManipulator(chartreuseManipObj);
+  return true;
 }
 
 void ChartreuseContext::toolOnSetup(MEvent& event) {
@@ -57,7 +155,7 @@ void ChartreuseContext::toolOnSetup(MEvent& event) {
   MFnMesh mesh(dagPath);
   MItDependencyNodes depNodeIter(MFn::kSkinClusterFilter);
   bool hasSkinCluster = false;
-  MObject skinObject;
+  MObject skinObj;
   for(; !depNodeIter.isDone() && !hasSkinCluster; depNodeIter.next()) {
     MObject node = depNodeIter.item();
     MStatus err;
@@ -73,7 +171,7 @@ void ChartreuseContext::toolOnSetup(MEvent& event) {
       if(output == mesh.object())
       {
         hasSkinCluster = true;
-        skinObject = node;
+        skinObj = node;
       }
     }
   }
@@ -84,26 +182,19 @@ void ChartreuseContext::toolOnSetup(MEvent& event) {
     return;
   }
 
-  MObject chartreuseManipObj;
-  MStatus err;
-  _chartreuseManip = (ChartreuseManipulator*)MPxManipulatorNode::newManipulator(
-    "ChartreuseManipulator", chartreuseManipObj, &err);
+  // Calculate the max influences for each face.
+  calculateMaxInfluences(dagPath, skinObj);
 
-  if (err.error()) {
+  // Finally add the manipulator.
+  bool didAdd = addChartreuseManipulator();
+  if (!didAdd) {
     MGlobal::displayError("Could not create manipulator");
     forceExit();
     return;
   }
 
-  _chartreuseManip->setup(this, dagPath, skinObject);
-  addManipulator(chartreuseManipObj);
-
-  MFnRotateManip rotateManip;
-  _rotateManip = rotateManip.create();
-  rotateManip.setManipScale(ROTATE_MANIP_SCALE);
-  rotateManip.setVisible(false);
-  addManipulator(_rotateManip);
-
+  _meshDagPath = dagPath;
+  _skinObject = skinObj;
   MGlobal::clearSelectionList();
 }
 

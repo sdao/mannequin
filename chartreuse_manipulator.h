@@ -8,8 +8,7 @@ class ChartreuseContext;
 class ChartreuseManipulator : public MPxManipulatorNode {
 public:
   ChartreuseManipulator();
-  ~ChartreuseManipulator();
-  void setup(ChartreuseContext* ctx, MDagPath meshDagPath, MObject skinObject);
+  void setup(ChartreuseContext* ctx, MDagPath newHighlight = MDagPath());
   MDagPath highlightedDagPath() const;
 
   virtual void postConstructor() override;
@@ -29,10 +28,5 @@ public:
 
 private:
   ChartreuseContext* _ctx;
-  MDagPath _meshDagPath;
-  MObject _skinObject;
-  unsigned int* _maxInfluences;
-  bool _initialized;
-
   MDagPath _highlight;
 };

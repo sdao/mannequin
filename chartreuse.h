@@ -10,9 +10,15 @@ class ChartreuseManipulator;
 class ChartreuseContext : public MPxContext {
 public:
   ChartreuseContext();
+  ~ChartreuseContext();
   void forceExit();
   void select(const MDagPath& dagPath);
   MDagPath selectionDagPath() const;
+  void calculateMaxInfluences(MDagPath meshDagPath, MObject skinObject);
+  const unsigned int* maxInfluences() const;
+  MDagPath meshDagPath() const;
+  MObject skinObject() const;
+  bool addChartreuseManipulator(MDagPath newHighlight = MDagPath());
 
   virtual void toolOnSetup(MEvent& event) override;
   virtual void toolOffCleanup() override;
@@ -26,6 +32,10 @@ public:
 
 private:
   static constexpr float ROTATE_MANIP_SCALE = 5.0f;
+
+  MDagPath _meshDagPath;
+  MObject _skinObject;
+  unsigned int* _maxInfluences;
 
   MDagPath _selection;
   ChartreuseManipulator* _chartreuseManip;
