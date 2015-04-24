@@ -1,6 +1,7 @@
 #include "chartreuse_manipulator.h"
 
 #include <limits>
+#include <iostream>
 
 #include <maya/MStatus.h>
 #include <maya/MFnTransform.h>
@@ -145,16 +146,18 @@ void ChartreuseManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
   MColor red(1.0f, 0.0f, 0.0f);
   drawManager.beginDrawable();
   drawManager.setColor(red);
-  drawManager.setLineWidth(2.0f);
+  drawManager.setLineWidth(4.0f);
 
-  // if (numChildJoints == 1) {
-  //   MFnDagNode childDagNode(singleChildJoint);
-  //   MFnTransform childXform(childDagNode.dagPath().transform());
-  //   MPoint childPivot = childXform.rotatePivot(MSpace::kWorld);
-  //   drawManager.line(pivot, childPivot);
-  // } else {
+  if (numChildJoints == 1) {
+    MFnDagNode dagNode(singleChildJoint);
+    MDagPath childDagPath;
+    dagNode.getPath(childDagPath);
+    MFnTransform childXform(childDagPath);
+    MPoint childPivot = childXform.rotatePivot(MSpace::kWorld);
+    drawManager.line(pivot, childPivot);
+  } else {
     drawManager.sphere(pivot, 2.0f);
-  // }
+  }
 
   drawManager.endDrawable();
 }
