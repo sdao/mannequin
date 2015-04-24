@@ -3,11 +3,14 @@
 #include <maya/MPxManipulatorNode.h>
 #include <maya/MDagPath.h>
 
+class ChartreuseContext;
+
 class ChartreuseManipulator : public MPxManipulatorNode {
 public:
   ChartreuseManipulator();
   ~ChartreuseManipulator();
-  void setup(MDagPath meshDagPath, MObject skinObject);
+  void setup(ChartreuseContext* ctx, MDagPath meshDagPath, MObject skinObject);
+  MDagPath highlightedDagPath() const;
 
   virtual void postConstructor() override;
   virtual MStatus doMove(M3dView& view, bool& refresh) override;
@@ -25,6 +28,7 @@ public:
   static const MTypeId id;
 
 private:
+  ChartreuseContext* _ctx;
   MDagPath _meshDagPath;
   MObject _skinObject;
   unsigned int* _maxInfluences;

@@ -1,4 +1,5 @@
 #include "chartreuse_manipulator.h"
+#include "chartreuse.h"
 
 #include <limits>
 #include <iostream>
@@ -15,13 +16,16 @@
 const MTypeId ChartreuseManipulator::id = MTypeId(0xcafecab);
 
 ChartreuseManipulator::ChartreuseManipulator()
-  : _maxInfluences(NULL), _initialized(false) {}
+  : _ctx(NULL), _maxInfluences(NULL), _initialized(false) {}
 
 ChartreuseManipulator::~ChartreuseManipulator() {
   delete[] _maxInfluences;
 }
 
-void ChartreuseManipulator::setup(MDagPath meshDagPath, MObject skinObject) {
+void ChartreuseManipulator::setup(ChartreuseContext* ctx,
+  MDagPath meshDagPath,
+  MObject skinObject) {
+  _ctx = ctx;
   _meshDagPath = meshDagPath;
   _skinObject = skinObject;
 
@@ -42,8 +46,6 @@ void ChartreuseManipulator::setup(MDagPath meshDagPath, MObject skinObject) {
     MDoubleArray weights;
     unsigned int numInfluences;
     skin.getWeights(_meshDagPath, compObj, weights, numInfluences);
-
-    std::cout << "weights = " << weights.length() << ", numInfluences = " << numInfluences << ", numPolyVertices = " << polyVertices.length() << std::endl;
 
     int count = 0;
     double* weightSums = new double[numInfluences];
@@ -71,6 +73,14 @@ void ChartreuseManipulator::setup(MDagPath meshDagPath, MObject skinObject) {
   }
 
   _initialized = true;
+}
+
+MDagPath ChartreuseManipulator::highlightedDagPath() const {
+  if (!_highlight.hasFn(MFn::kTransform)) {
+    return MDagPath();
+  }
+
+  return _highlight;
 }
 
 void ChartreuseManipulator::postConstructor() {
@@ -131,9 +141,14 @@ MStatus ChartreuseManipulator::doMove(M3dView& view, bool& refresh) {
 
 MStatus ChartreuseManipulator::doMoveError(bool& refresh) {
   MGlobal::clearSelectionList();
+
+  // We also need to select the current joint selection, if any.
+  MDagPath parentSelection = _ctx->selectionDagPath();
+  MGlobal::select(parentSelection, MObject::kNullObj, MGlobal::kAddToList);
+
   _highlight = MDagPath();
   refresh = true;
-  return MS::kSuccess;
+  return MS::kUnknownParameter;
 }
 
 void ChartreuseManipulator::draw(M3dView &view,
