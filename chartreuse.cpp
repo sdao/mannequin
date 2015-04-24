@@ -11,12 +11,17 @@
 
 ChartreuseContext::ChartreuseContext() {}
 
+void ChartreuseContext::forceExit() {
+  MGlobal::executeCommand("setToolTo $gSelect");
+}
+
 void ChartreuseContext::toolOnSetup(MEvent& event) {
   MSelectionList list;
   MGlobal::getActiveSelectionList(list);
 
   if (list.length() == 0) {
     MGlobal::displayError("Nothing selected");
+    forceExit();
     return;
   }
 
@@ -26,6 +31,7 @@ void ChartreuseContext::toolOnSetup(MEvent& event) {
 
   if (!dagPath.hasFn(MFn::kMesh)) {
     MGlobal::displayError("Selection is not a mesh");
+    forceExit();
     return;
   }
 
@@ -55,6 +61,7 @@ void ChartreuseContext::toolOnSetup(MEvent& event) {
 
   if (!hasSkinCluster) {
     MGlobal::displayError("Selection has no smooth skin bound");
+    forceExit();
     return;
   }
 
@@ -65,6 +72,7 @@ void ChartreuseContext::toolOnSetup(MEvent& event) {
 
   if (err.error()) {
     MGlobal::displayError("Could not create manipulator");
+    forceExit();
     return;
   }
 

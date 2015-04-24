@@ -6,6 +6,7 @@
 class ChartreuseManipulator : public MPxManipulatorNode {
 public:
   ChartreuseManipulator();
+  ~ChartreuseManipulator();
   void setup(MDagPath meshDagPath, MObject skinObject);
 
   virtual void postConstructor() override;
@@ -26,6 +27,7 @@ public:
 private:
   MDagPath _meshDagPath;
   MObject _skinObject;
+  unsigned int* _maxInfluences;
   bool _initialized;
 
   MDagPath _highlight;

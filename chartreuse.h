@@ -8,6 +8,7 @@
 class ChartreuseContext : public MPxContext {
 public:
   ChartreuseContext();
+  void forceExit();
 
   virtual void toolOnSetup(MEvent& event) override;
   virtual void toolOffCleanup() override;
