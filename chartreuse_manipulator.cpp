@@ -11,6 +11,7 @@
 #include <maya/MFnMesh.h>
 #include <maya/MFnSkinCluster.h>
 #include <maya/MGlobal.h>
+#include <maya/MFnManip3D.h>
 
 const MTypeId ChartreuseManipulator::id = MTypeId(0xcafecab);
 
@@ -58,6 +59,13 @@ MStatus ChartreuseManipulator::doMove(M3dView& view, bool& refresh) {
     return doMoveError(refresh);
   }
 
+  bool hitRotateManip = _ctx->intersectRotateManip(linePoint, lineDirection,
+    NULL);
+  if (hitRotateManip) {
+    // We're pointing at the rotation manipulator.
+    return doMoveError(refresh);
+  }
+
   // Select all related faces.
   const unsigned int* maxInfluences = _ctx->maxInfluences();
   if (!maxInfluences) {
@@ -75,26 +83,30 @@ MStatus ChartreuseManipulator::doMove(M3dView& view, bool& refresh) {
     }
   }
 
-  MGlobal::select(_ctx->meshDagPath(), compObj, MGlobal::kReplaceList);
-
   // Finish up!
   MDagPathArray influenceObjects;
-  unsigned int numObjects = skin.influenceObjects(influenceObjects);
+  skin.influenceObjects(influenceObjects);
+  if (!(_highlight == influenceObjects[hitFaceInfluence])) {
+    // Only update if something's changed!
+    MGlobal::select(_ctx->meshDagPath(), compObj, MGlobal::kReplaceList);
 
-  _highlight = influenceObjects[hitFaceInfluence];
-  refresh = true;
+    _highlight = influenceObjects[hitFaceInfluence];
+    refresh = true;
+  }
+
   return MS::kSuccess;
 }
 
 MStatus ChartreuseManipulator::doMoveError(bool& refresh) {
-  MGlobal::clearSelectionList();
+  if (!(_highlight == MDagPath())) {
+    // We also need to select the current joint selection, if any.
+    MDagPath parentSelection = _ctx->selectionDagPath();
+    MGlobal::select(parentSelection, MObject::kNullObj, MGlobal::kReplaceList);
 
-  // We also need to select the current joint selection, if any.
-  MDagPath parentSelection = _ctx->selectionDagPath();
-  MGlobal::select(parentSelection, MObject::kNullObj, MGlobal::kAddToList);
+    _highlight = MDagPath();
+    refresh = true;
+  }
 
-  _highlight = MDagPath();
-  refresh = true;
   return MS::kUnknownParameter;
 }
 

@@ -1,5 +1,6 @@
 #include "chartreuse.h"
 #include "chartreuse_manipulator.h"
+#include "util.h"
 
 #include <limits>
 
@@ -41,10 +42,8 @@ void ChartreuseContext::select(const MDagPath& dagPath) {
 
     MFnTransform selectionXform(_selection);
     MPlug rotationPlug = selectionXform.findPlug("rotate");
-    MPlug rotationCenterPlug = selectionXform.findPlug("rotatePivot");
 
     rotateManip.connectToRotationPlug(rotationPlug);
-    rotateManip.connectToRotationCenterPlug(rotationCenterPlug);
     rotateManip.displayWithNode(_selection.node());
     rotateManip.setManipScale(ROTATE_MANIP_SCALE);
     rotateManip.setRotateMode(MFnRotateManip::kObjectSpace);
@@ -130,6 +129,27 @@ bool ChartreuseContext::addChartreuseManipulator(MDagPath newHighlight) {
   _chartreuseManip->setup(this, newHighlight);
   addManipulator(chartreuseManipObj);
   return true;
+}
+
+bool ChartreuseContext::intersectRotateManip(MPoint linePoint,
+  MVector lineDirection,
+  float* distanceOut) {
+  if (_rotateManip.isNull()) {
+    return false;
+  }
+
+  MStatus err;
+  MFnTransform selectionXform(_selection);
+  MPoint selectionPivot = selectionXform.rotatePivot(MSpace::kWorld, &err);
+
+  // Extend manipulator radius a bit because of the free-rotation "shell".
+  float manipRadius = ROTATE_MANIP_SCALE * MFnManip3D::globalSize() * 1.25f;
+
+  return Util::raySphereIntersection(linePoint,
+    lineDirection,
+    selectionPivot,
+    manipRadius,
+    distanceOut);
 }
 
 void ChartreuseContext::toolOnSetup(MEvent& event) {

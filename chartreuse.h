@@ -4,6 +4,8 @@
 #include <maya/MPxContextCommand.h>
 #include <maya/MEvent.h>
 #include <maya/MDagPath.h>
+#include <maya/MPoint.h>
+#include <maya/MVector.h>
 
 class ChartreuseManipulator;
 
@@ -19,6 +21,9 @@ public:
   MDagPath meshDagPath() const;
   MObject skinObject() const;
   bool addChartreuseManipulator(MDagPath newHighlight = MDagPath());
+  bool intersectRotateManip(MPoint linePoint,
+    MVector lineDirection,
+    float* distanceOut);
 
   virtual void toolOnSetup(MEvent& event) override;
   virtual void toolOffCleanup() override;
