@@ -136,7 +136,7 @@ QGroupBox:focus {
       <item row="0" column="1">
        <widget class="QLineEdit" name="rotateXEdit">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -174,7 +174,7 @@ QGroupBox:focus {
       <item row="2" column="1">
        <widget class="QLineEdit" name="rotateZEdit">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -193,7 +193,7 @@ QGroupBox:focus {
       <item row="1" column="1">
        <widget class="QLineEdit" name="rotateYEdit">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -214,6 +214,12 @@ QGroupBox:focus {
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>groupBox</tabstop>
+  <tabstop>rotateXEdit</tabstop>
+  <tabstop>rotateYEdit</tabstop>
+  <tabstop>rotateZEdit</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

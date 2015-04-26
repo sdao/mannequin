@@ -53,4 +53,9 @@ public:
   ChartreuseContextCommand();
   virtual MPxContext* makeObj() override;
   static void* creator();
+  virtual MStatus doQueryFlags() override;
+  virtual MStatus appendSyntax() override;
+
+private:
+  ChartreuseContext* _chartreuseContext;
 };
