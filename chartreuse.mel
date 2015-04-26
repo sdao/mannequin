@@ -1,0 +1,31 @@
+global proc chartreuseContextProperties() {
+  setUITemplate -pushTemplate DefaultTemplate;
+
+  string $parent = `toolPropertyWindow -q -location`;
+  setParent $parent;
+
+  if (`columnLayout -ex chartreuseLayout`) {
+      deleteUI chartreuseLayout;
+  }
+
+  columnLayout chartreuseLayout;
+  setParent ..;
+
+  setUITemplate -popTemplate;
+
+  string $whichCtx = `currentCtx`;
+  string $influenceObjects = `chartreuseContext -q -io $whichCtx`;
+
+  // MEL is the devil. We'll do everything in Python from here on out!
+  string $pyCommand =
+    `format -stringArg $influenceObjects "setupChartreuseUI(\"^1s\")"`;
+  python $pyCommand;
+}
+
+global proc chartreuseContextValues(string $name) {
+  toolPropertySelect chartreuseLayout;
+}
+
+global proc chartreuseContextFinish() {
+  python "tearDownChartreuseUI()";
+}

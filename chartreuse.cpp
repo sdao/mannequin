@@ -13,6 +13,7 @@
 #include <maya/MFnMesh.h>
 #include <maya/MFnRotateManip.h>
 #include <maya/MFnSingleIndexedComponent.h>
+#include <maya/MDagPathArray.h>
 
 ChartreuseContext::ChartreuseContext() : _maxInfluences(NULL) {}
 
@@ -223,6 +224,7 @@ void ChartreuseContext::toolOffCleanup() {
   _rotateManip = MObject::kNullObj;
   deleteManipulators();
   MGlobal::clearSelectionList();
+  MGlobal::executeCommand("chartreuseContextFinish");
 }
 
 void ChartreuseContext::getClassName(MString& name) const {
@@ -255,14 +257,56 @@ void ChartreuseContext::abortAction() {
   select(MDagPath());
 }
 
-ChartreuseContextCommand::ChartreuseContextCommand() {}
+ChartreuseContextCommand::ChartreuseContextCommand()
+  : _chartreuseContext(NULL) {}
 
 MPxContext* ChartreuseContextCommand::makeObj() {
-  return new ChartreuseContext();
+  _chartreuseContext = new ChartreuseContext();
+  return _chartreuseContext;
 }
 
 void* ChartreuseContextCommand::creator() {
   return new ChartreuseContextCommand;
+}
+
+MStatus ChartreuseContextCommand::doQueryFlags() {
+  MArgParser parse = parser();
+
+  if (!_chartreuseContext) {
+    return MS::kInvalidParameter;
+  }
+
+  if (parse.isFlagSet("-io")) {
+    MStatus err;
+    MFnSkinCluster skin(_chartreuseContext->skinObject(), &err);
+    if (err.error()) {
+      return err;
+    }
+
+    MDagPathArray influenceObjects;
+    int numInfluences = skin.influenceObjects(influenceObjects);
+
+    MString result;
+    for (int i = 0; i < numInfluences; i++) {
+      if (i != 0) {
+        result += " ";
+      }
+
+      result += influenceObjects[i].fullPathName();
+    }
+
+    setResult(result);
+  }
+
+  return MS::kSuccess;
+}
+
+MStatus ChartreuseContextCommand::appendSyntax() {
+	MSyntax syn = syntax();
+
+  syn.addFlag("-io", "-influenceObjects");
+
+  return MS::kSuccess;
 }
 
 MStatus initializePlugin(MObject obj)
@@ -278,6 +322,9 @@ MStatus initializePlugin(MObject obj)
     &ChartreuseManipulator::creator,
     &ChartreuseManipulator::initialize,
     MPxNode::kManipulatorNode);
+
+  status = MGlobal::executePythonCommand("from chartreuse import *");
+  status = MGlobal::sourceFile("chartreuse.mel");
 
   return status;
 }
