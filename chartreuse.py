@@ -49,6 +49,15 @@ class ChartreuseToolPanel(QObject):
             return True
         return QWidget.eventFilter(self, widget, event)
 
+    def select(self, dagPath):
+        if dagPath is None:
+            selectedPanel = ""
+        else:
+            selectedPanel = dagPath.partialPathName()
+
+        for panel in self.panels:
+            self.panels[panel].groupBox.setFlat(panel == selectedPanel)
+
     def layoutJointDisplay(self, jointDisplay):
         loader = QUiLoader()
         file = QFile(os.path.join(os.path.dirname(__file__), "panel_double.ui"))
@@ -393,6 +402,17 @@ def organizeJoints(joints):
         jointColors.append(0)
 
     return zip(jointPairs, jointColors)
+
+
+def chartreuseSelectionChanged(dagString):
+    try:
+        selList = om.MSelectionList()
+        selList.add(dagString)
+        dagPath = om.MDagPath()
+        selList.getDagPath(0, dagPath)
+        chartreuseToolPanel.select(dagPath)
+    except:
+        chartreuseToolPanel.select(None)
 
 
 def tearDownChartreuseUI():

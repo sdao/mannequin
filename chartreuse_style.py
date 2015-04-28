@@ -10,12 +10,12 @@ QGroupBox {
 }
 
 QGroupBox::title {
-    top: 5px;
-    left: 7px;
+	top: 5px;
+	left: 7px;
 }
 
-QGroupBox:focus {
-    border: 2px solid black;
+QGroupBox:flat {
+	border: 2px solid #ee2;
 }
 """
 
@@ -30,12 +30,12 @@ QGroupBox {
 }
 
 QGroupBox::title {
-    top: 5px;
-    left: 7px;
+	top: 5px;
+	left: 7px;
 }
 
-QGroupBox:focus {
-    border: 2px solid black;
+QGroupBox:flat {
+	border: 2px solid #ee2;
 }
 """
 
@@ -50,11 +50,11 @@ QGroupBox {
 }
 
 QGroupBox::title {
-    top: 5px;
-    left: 7px;
+	top: 5px;
+	left: 7px;
 }
 
-QGroupBox:focus {
-    border: 2px solid black;
+QGroupBox:flat {
+	border: 2px solid #ee2;
 }
 """

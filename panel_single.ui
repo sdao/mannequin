@@ -63,8 +63,8 @@ QGroupBox::title {
 	left: 7px;
 }
 
-QGroupBox:focus {
-	border: 2px solid black;
+QGroupBox:flat {
+	border: 2px solid #ee2;
 }
 </string>
      </property>
@@ -73,6 +73,9 @@ QGroupBox:focus {
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
+     </property>
+     <property name="flat">
+      <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout" columnstretch="2,0,0,2">
       <property name="topMargin">

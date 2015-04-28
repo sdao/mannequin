@@ -52,6 +52,11 @@ void ChartreuseContext::select(const MDagPath& dagPath) {
   } else {
     _rotateManip = MObject::kNullObj;
   }
+
+  MString pythonSelectionCallback;
+  pythonSelectionCallback.format("chartreuseSelectionChanged(\"^1s\")",
+    _selection.fullPathName());
+  MGlobal::executePythonCommand(pythonSelectionCallback);
 }
 
 MDagPath ChartreuseContext::selectionDagPath() const {
