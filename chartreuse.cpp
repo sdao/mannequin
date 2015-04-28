@@ -274,6 +274,45 @@ void* ChartreuseContextCommand::creator() {
   return new ChartreuseContextCommand;
 }
 
+MStatus ChartreuseContextCommand::doEditFlags() {
+  MArgParser parse = parser();
+
+  if (!_chartreuseContext) {
+    return MS::kInvalidParameter;
+  }
+
+  if (parse.isFlagSet("-io")) {
+    return MS::kInvalidParameter;
+  } else if (parse.isFlagSet("-sel")) {
+    MString arg = parse.flagArgumentString("-sel", 0);
+
+    MStatus err;
+    MFnSkinCluster skin(_chartreuseContext->skinObject(), &err);
+    if (err.error()) {
+      return err;
+    }
+
+    MDagPathArray influenceObjects;
+    int numInfluences = skin.influenceObjects(influenceObjects);
+
+    for (int i = 0; i < numInfluences; i++) {
+      MString fullName = influenceObjects[i].fullPathName();
+      MString partialName = influenceObjects[i].partialPathName();
+
+      if (arg == fullName || arg == partialName) {
+        _chartreuseContext->select(influenceObjects[i]);
+        return MS::kSuccess;
+      }
+    }
+
+    MString errMessage;
+    errMessage.format("Couldn't find and select ^1s", arg);
+    MGlobal::displayWarning(errMessage);
+  }
+
+  return MS::kSuccess;
+}
+
 MStatus ChartreuseContextCommand::doQueryFlags() {
   MArgParser parse = parser();
 
@@ -301,6 +340,16 @@ MStatus ChartreuseContextCommand::doQueryFlags() {
     }
 
     setResult(result);
+  } else if (parse.isFlagSet("-sel")) {
+    MDagPath dagPath = _chartreuseContext->selectionDagPath();
+    MString result;
+    if (dagPath.isValid()) {
+      result = MString(dagPath.fullPathName());
+    } else {
+      result = MString("");
+    }
+
+    setResult(result);
   }
 
   return MS::kSuccess;
@@ -310,6 +359,7 @@ MStatus ChartreuseContextCommand::appendSyntax() {
 	MSyntax syn = syntax();
 
   syn.addFlag("-io", "-influenceObjects");
+  syn.addFlag("-sel", "-selection", MSyntax::kString);
 
   return MS::kSuccess;
 }
