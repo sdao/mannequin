@@ -74,7 +74,7 @@ QGroupBox:focus {
      <property name="alignment">
       <set>Qt::AlignCenter</set>
      </property>
-     <layout class="QGridLayout" name="gridLayout" columnstretch="2,0,0">
+     <layout class="QGridLayout" name="gridLayout" columnstretch="2,0,0,2">
       <property name="topMargin">
        <number>24</number>
       </property>
@@ -84,27 +84,21 @@ QGroupBox:focus {
       <property name="verticalSpacing">
        <number>0</number>
       </property>
-      <item row="0" column="0">
-       <widget class="QLabel" name="rotateXLabel">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+      <item row="0" column="3">
+       <spacer name="spacerAfter">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
         </property>
-        <property name="styleSheet">
-         <string notr="true">color: #fff;</string>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
         </property>
-        <property name="text">
-         <string>rotate X</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
-       </widget>
+       </spacer>
       </item>
-      <item row="1" column="1">
-       <widget class="QLineEdit" name="rotateYEdit">
+      <item row="0" column="2">
+       <widget class="QLineEdit" name="rotateXEdit">
         <property name="enabled">
          <bool>true</bool>
         </property>
@@ -122,7 +116,7 @@ QGroupBox:focus {
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
+      <item row="1" column="1">
        <widget class="QLabel" name="rotateYLabel">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -142,7 +136,26 @@ QGroupBox:focus {
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLineEdit" name="rotateXEdit">
+       <widget class="QLabel" name="rotateXLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: #fff;</string>
+        </property>
+        <property name="text">
+         <string>rotate X</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QLineEdit" name="rotateYEdit">
         <property name="enabled">
          <bool>true</bool>
         </property>
@@ -160,20 +173,7 @@ QGroupBox:focus {
         </property>
        </widget>
       </item>
-      <item row="0" column="2">
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="2" column="1">
+      <item row="2" column="2">
        <widget class="QLineEdit" name="rotateZEdit">
         <property name="enabled">
          <bool>true</bool>
@@ -192,7 +192,7 @@ QGroupBox:focus {
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
+      <item row="2" column="1">
        <widget class="QLabel" name="rotateZLabel">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -210,6 +210,19 @@ QGroupBox:focus {
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
+      </item>
+      <item row="0" column="0">
+       <spacer name="spacerBefore">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </widget>
