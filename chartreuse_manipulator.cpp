@@ -98,12 +98,19 @@ MStatus ChartreuseManipulator::doMove(M3dView& view, bool& refresh) {
 }
 
 MStatus ChartreuseManipulator::doMoveError(bool& refresh) {
-  if (!(_highlight == MDagPath())) {
+  if (_highlight.isValid()) {
+    // Highlight was valid, so we need to clear it now.
+    _highlight = MDagPath();
+
     // We also need to select the current joint selection, if any.
     MDagPath parentSelection = _ctx->selectionDagPath();
-    MGlobal::select(parentSelection, MObject::kNullObj, MGlobal::kReplaceList);
+    if (parentSelection.isValid()) {
+      MGlobal::select(parentSelection, MObject::kNullObj,
+        MGlobal::kReplaceList);
+    } else {
+      MGlobal::clearSelectionList();
+    }
 
-    _highlight = MDagPath();
     refresh = true;
   }
 
