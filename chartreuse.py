@@ -359,7 +359,7 @@ def organizeJoints(joints):
             attr = dependNode.attribute("type")
             plug = dependNode.findPlug(attr, True)
             typeIds.append(plug.asInt())
-            
+
         if typeIds.count(typeIds[0]) == len(typeIds):  # All elements the same.
             isArm = typeIds[0] >= 10 and typeIds[0] <= 14
             isFinger = typeIds[0] >= 19 and typeIds[0] <= 23

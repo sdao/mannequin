@@ -20,6 +20,7 @@ ChartreuseManipulator::ChartreuseManipulator() : _ctx(NULL) {}
 void ChartreuseManipulator::setup(ChartreuseContext* ctx,
   MDagPath newHighlight) {
   _ctx = ctx;
+  _highlight = newHighlight;
 }
 
 MDagPath ChartreuseManipulator::highlightedDagPath() const {
