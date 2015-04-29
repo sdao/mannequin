@@ -26,6 +26,10 @@ void ChartreuseContext::forceExit() {
 }
 
 void ChartreuseContext::select(const MDagPath& dagPath) {
+  if (_selection == dagPath) {
+    return;
+  }
+  
   _selection = dagPath;
 
   MDagPath oldHighlight;

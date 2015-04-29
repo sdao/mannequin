@@ -59,20 +59,23 @@ class FocusEventFilter(QObject):
         self.panels = {}
 
     def eventFilter(self, widget, event):
-        if (event.type() == QEvent.FocusIn):
+        if (event.type() == QEvent.MouseButtonPress):
             for x in self.panels:
                 if self.panels[x].groupBox == widget:
                     # Select node with name x.
-                    currentContext = cmds.currentCtx()
-                    cmds.chartreuseContext(currentContext, e=True, sel=x)
+                    self.selectNode(x)
                     return True
             return True
 
         return QWidget.eventFilter(self, widget, event)
 
+    def selectNode(self, nodeName):
+        currentContext = cmds.currentCtx()
+        cmds.chartreuseContext(currentContext, e=True, sel=nodeName)
 
 class ChartreuseToolPanel():
     def __init__(self):
+        self.loader = QUiLoader()
         self.resizeEventFilter = ResizeEventFilter()
         self.focusEventFilter = FocusEventFilter()
         self.reset(None, None)
@@ -114,11 +117,10 @@ class ChartreuseToolPanel():
             self.panels[panel].groupBox.setFlat(panel == selectedPanel)
 
     def layoutJointDisplay(self, jointDisplay):
-        loader = QUiLoader()
         file = QFile(os.path.join(os.path.dirname(__file__),
                                   "panel_double.ui"))
         file.open(QFile.ReadOnly)
-        container = loader.load(file)
+        container = self.loader.load(file)
         file.close()
 
         # Add child panels.
@@ -132,11 +134,10 @@ class ChartreuseToolPanel():
         self.gui.layout().addWidget(container)
 
     def insertJointDisplayPanel(self, dagPath, dependNode, color, container):
-        loader = QUiLoader()
         file = QFile(os.path.join(os.path.dirname(__file__),
                                   "panel_single.ui"))
         file.open(QFile.ReadOnly)
-        panelGui = loader.load(file)
+        panelGui = self.loader.load(file)
         file.close()
 
         # Setup panel validators.
@@ -278,10 +279,9 @@ def setupChartreuseUI():
                                                 long(toolLayoutPtr))
     chartreuseLayout = wrapInstance(long(chartreuseLayoutPtr), QWidget)
 
-    loader = QUiLoader()
     file = QFile(os.path.join(os.path.dirname(__file__), "chartreuse.ui"))
     file.open(QFile.ReadOnly)
-    gui = loader.load(file, parentWidget=chartreuseLayout)
+    gui = chartreuseToolPanel.loader.load(file, parentWidget=chartreuseLayout)
     file.close()
 
     chartreuseToolPanel.reset(chartreuseLayout, gui)

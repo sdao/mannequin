@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>SinglePanel</class>
+ <widget class="QWidget" name="SinglePanel">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -44,7 +44,7 @@
       </size>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::StrongFocus</enum>
+      <enum>Qt::ClickFocus</enum>
      </property>
      <property name="styleSheet">
       <string notr="true">QGroupBox {
@@ -65,6 +65,10 @@ QGroupBox::title {
 
 QGroupBox:flat {
 	border: 2px solid #ee2;
+}
+
+QGroupBox:hover:!flat {
+	border: 1px solid #ee2;
 }
 </string>
      </property>
