@@ -31,7 +31,7 @@ class DragWidget(QWidget):
         if self.originalRotation is None or self.originalMouseX is None:
             return
 
-        diff = float(event.globalX() - self.originalMouseX) / 30.0
+        diff = float(event.globalX() - self.originalMouseX) / 60.0
         if self.index == 0:
             diffRotation = om.MEulerRotation(diff, 0, 0)
         elif self.index == 1:
