@@ -13,13 +13,8 @@ global proc chartreuseContextProperties() {
 
   setUITemplate -popTemplate;
 
-  string $whichCtx = `currentCtx`;
-  string $influenceObjects = `chartreuseContext -q -io $whichCtx`;
-
   // MEL is the devil. We'll do everything in Python from here on out!
-  string $pyCommand =
-    `format -stringArg $influenceObjects "setupChartreuseUI(\"^1s\")"`;
-  python $pyCommand;
+  python "setupChartreuseUI()";
 }
 
 global proc chartreuseContextValues(string $name) {

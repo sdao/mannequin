@@ -1,5 +1,4 @@
 from maya import cmds
-from maya import mel
 from maya import OpenMaya as om
 from maya import OpenMayaUI as ui
 
@@ -11,43 +10,99 @@ from shiboken import wrapInstance
 from chartreuse_style import ChartreuseStylesheets
 
 import os
-import math
 from functools import partial
 from collections import OrderedDict
 
 
-class ChartreuseToolPanel(QObject):
+class ResizeEventFilter(QObject):
     def __init__(self):
-        super(ChartreuseToolPanel, self).__init__()
+        super(ResizeEventFilter, self).__init__()
+        self.source = None
+        self.target = None
+
+    def install(self, source, target):
+        self.source = source
+        self.target = target
+        self.source.installEventFilter(self)
+
+    def remove(self):
+        if self.source is not None:
+            self.source.removeEventFilter(self)
+        self.source = None
+        self.target = None
+
+    def eventFilter(self, widget, event):
+        if (event.type() == QEvent.Resize and
+                self.source is not None and
+                self.target is not None):
+            geometry = self.target.geometry()
+            geometry.setWidth(self.source.width())
+            self.target.setGeometry(geometry)
+            return True
+
+        return QWidget.eventFilter(self, widget, event)
+
+
+class FocusEventFilter(QObject):
+    def __init__(self):
+        super(FocusEventFilter, self).__init__()
+        self.panels = {}
+
+    def install(self, panels):
+        self.panels = panels.copy()
+        for x in self.panels:
+            self.panels[x].groupBox.installEventFilter(self)
+
+    def remove(self):
+        for x in self.panels:
+            self.panels[x].groupBox.removeEventFilter(self)
+        self.panels = {}
+
+    def eventFilter(self, widget, event):
+        if (event.type() == QEvent.FocusIn):
+            for x in self.panels:
+                if self.panels[x].groupBox == widget:
+                    # Select node with name x.
+                    currentContext = cmds.currentCtx()
+                    cmds.chartreuseContext(currentContext, e=True, sel=x)
+                    return True
+            return True
+
+        return QWidget.eventFilter(self, widget, event)
+
+
+class ChartreuseToolPanel():
+    def __init__(self):
+        self.resizeEventFilter = ResizeEventFilter()
+        self.focusEventFilter = FocusEventFilter()
         self.reset(None, None)
 
     def reset(self, parent, gui):
+        # Cleanup callbacks.
         try:
             for x in self.callbacks:
                 om.MNodeMessage.removeCallback(x)
-            self.callbacks = []
-        except:
-            self.callbacks = []
+        except AttributeError:
+            pass
 
+        self.callbacks = []
+
+        # Reset everything.
         self.parent = parent
         self.gui = gui
         self.dagPaths = {}
         self.panels = {}
         self.updateQueue = []
 
-        if self.gui is None:
+        self.resizeEventFilter.remove()
+        self.focusEventFilter.remove()
+
+        # Set up validator and parent it to the UI.
+        if gui is None:
             self.validator = None
         else:
             self.validator = QDoubleValidator(gui)
             self.validator.setDecimals(3)
-
-    def eventFilter(self, widget, event):
-        if (event.type() == QEvent.Resize and self.gui is not None):
-            geometry = self.gui.geometry()
-            geometry.setWidth(self.parent.width())
-            self.gui.setGeometry(geometry)
-            return True
-        return QWidget.eventFilter(self, widget, event)
 
     def select(self, dagPath):
         if dagPath is None:
@@ -60,7 +115,8 @@ class ChartreuseToolPanel(QObject):
 
     def layoutJointDisplay(self, jointDisplay):
         loader = QUiLoader()
-        file = QFile(os.path.join(os.path.dirname(__file__), "panel_double.ui"))
+        file = QFile(os.path.join(os.path.dirname(__file__),
+                                  "panel_double.ui"))
         file.open(QFile.ReadOnly)
         container = loader.load(file)
         file.close()
@@ -77,7 +133,8 @@ class ChartreuseToolPanel(QObject):
 
     def insertJointDisplayPanel(self, dagPath, dependNode, color, container):
         loader = QUiLoader()
-        file = QFile(os.path.join(os.path.dirname(__file__), "panel_single.ui"))
+        file = QFile(os.path.join(os.path.dirname(__file__),
+                                  "panel_single.ui"))
         file.open(QFile.ReadOnly)
         panelGui = loader.load(file)
         file.close()
@@ -108,7 +165,8 @@ class ChartreuseToolPanel(QObject):
         self.updatePanelGui(panelGui, rotation.x, rotation.y, rotation.z)
 
         # Register callback for attribute update.
-        callbackId = om.MNodeMessage.addNodeDirtyPlugCallback(dependNode,
+        callbackId = om.MNodeMessage.addNodeDirtyPlugCallback(
+            dependNode,
             self.dirtyPlugCallback,
             None)
         self.callbacks.append(callbackId)
@@ -121,18 +179,30 @@ class ChartreuseToolPanel(QObject):
         panelGui.rotateZEdit.editingFinished.connect(
             partial(self.setRotation, dagPath=dagPath, index=2))
 
+        # Register event filter.
+        #
+
         # Finally add widget to container.
         container.layout().addWidget(panelGui)
+
+    def finishLayout(self):
+        # Setup resize event filter.
+        self.resizeEventFilter.install(self.parent, self.gui)
+
+        # Setup focus event filter.
+        self.focusEventFilter.install(self.panels)
+
+        # Setup the rest of the UI and show it.
+        self.gui.layout().setAlignment(Qt.AlignTop)
+        self.gui.setMinimumHeight(self.gui.sizeHint().height())
+        self.parent.setMinimumHeight(self.gui.sizeHint().height())
+        self.gui.show()
 
     def dirtyPlugCallback(self, node, plug, *args, **kwargs):
         nodeName, attrName = plug.name().split(".")
 
         if nodeName not in self.panels:
             return
-
-        x = None
-        y = None
-        z = None
 
         if attrName[:6] == "rotate":
             self.updateQueue.append(nodeName)
@@ -174,31 +244,32 @@ class ChartreuseToolPanel(QObject):
         # This means that we won't have to convert units -- they should already
         # be in the UI units, which MEL expects.
         systemUnit = om.MGlobal.executeCommandStringResult("currentUnit -q -a")
-        deg = systemUnit[:3] == "deg"
 
         if index == 0 and panelGui.rotateXEdit.isModified():
             x = float(panelGui.rotateXEdit.text())
-            command = "setAttr {0}.rotateX {1}".format(nodeName, x)
-            om.MGlobal.executeCommand(command, True, True)
+            cmds.setAttr("{0}.rotateX".format(nodeName), x)
         elif index == 1 and panelGui.rotateYEdit.isModified():
             y = float(panelGui.rotateYEdit.text())
-            command = "setAttr {0}.rotateY {1}".format(nodeName, y)
-            om.MGlobal.executeCommand(command, True, True)
+            cmds.setAttr("{0}.rotateY".format(nodeName), y)
         elif index == 2 and panelGui.rotateZEdit.isModified():
             z = float(panelGui.rotateZEdit.text())
-            command = "setAttr {0}.rotateZ {1}".format(nodeName, z)
-            om.MGlobal.executeCommand(command, True, True)
+            cmds.setAttr("{0}.rotateZ".format(nodeName), z)
 
         objectXform = om.MFnTransform(dagPath)
         rotation = om.MEulerRotation()
         objectXform.getRotation(rotation)
         self.updatePanelGui(panelGui, rotation.x, rotation.y, rotation.z)
 
+
 # Singleton object, global state.
 chartreuseToolPanel = ChartreuseToolPanel()
 
 
-def setupChartreuseUI(influenceObjectsStr):
+def setupChartreuseUI():
+    currentContext = cmds.currentCtx()
+    influenceObjectsStr = cmds.chartreuseContext(currentContext,
+                                                 q=True,
+                                                 io=True)
     influenceObjects = influenceObjectsStr.split(" ")
 
     toolLayoutPath = cmds.toolPropertyWindow(query=True, location=True)
@@ -231,11 +302,7 @@ def setupChartreuseUI(influenceObjectsStr):
     for jointDisplay in jointDisplays:
         chartreuseToolPanel.layoutJointDisplay(jointDisplay)
 
-    gui.layout().setAlignment(Qt.AlignTop)
-    gui.setMinimumHeight(gui.sizeHint().height())
-    chartreuseLayout.setMinimumHeight(gui.sizeHint().height())
-    chartreuseLayout.installEventFilter(chartreuseToolPanel)
-    gui.show()
+    chartreuseToolPanel.finishLayout()
 
 
 def organizeJoints(joints):
