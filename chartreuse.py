@@ -8,6 +8,7 @@ from PySide.QtUiTools import *
 from shiboken import wrapInstance
 
 from chartreuse_style import ChartreuseStylesheets
+from chartreuse_widgets import DragWidget
 
 import os
 from functools import partial
@@ -140,6 +141,14 @@ class ChartreuseToolPanel():
         panelGui = self.loader.load(file)
         file.close()
 
+        # Set up drag-label UI.
+        rotateXDrag = DragWidget("rotate X", dagPath, 0)
+        rotateYDrag = DragWidget("rotate Y", dagPath, 1)
+        rotateZDrag = DragWidget("rotate Z", dagPath, 2)
+        panelGui.rotateXLabel.layout().addWidget(rotateXDrag, 0, 0)
+        panelGui.rotateYLabel.layout().addWidget(rotateYDrag, 0, 0)
+        panelGui.rotateZLabel.layout().addWidget(rotateZDrag, 0, 0)
+
         # Setup panel validators.
         panelGui.rotateXEdit.setValidator(self.validator)
         panelGui.rotateYEdit.setValidator(self.validator)
@@ -179,9 +188,6 @@ class ChartreuseToolPanel():
             partial(self.setRotation, dagPath=dagPath, index=1))
         panelGui.rotateZEdit.editingFinished.connect(
             partial(self.setRotation, dagPath=dagPath, index=2))
-
-        # Register event filter.
-        #
 
         # Finally add widget to container.
         container.layout().addWidget(panelGui)
@@ -244,8 +250,6 @@ class ChartreuseToolPanel():
         # Because I'm lazy, I'm going to use the setAttr command!
         # This means that we won't have to convert units -- they should already
         # be in the UI units, which MEL expects.
-        systemUnit = om.MGlobal.executeCommandStringResult("currentUnit -q -a")
-
         if index == 0 and panelGui.rotateXEdit.isModified():
             x = float(panelGui.rotateXEdit.text())
             cmds.setAttr("{0}.rotateX".format(nodeName), x)
