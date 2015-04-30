@@ -1,6 +1,9 @@
 global proc chartreuseContextProperties() {
   setUITemplate -pushTemplate DefaultTemplate;
 
+  string $label = `toolPropertyWindow -q -field`;
+  text -e -label "Chartreuse Settings" $label;
+
   string $parent = `toolPropertyWindow -q -location`;
   setParent $parent;
 
