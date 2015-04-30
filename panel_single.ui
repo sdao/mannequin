@@ -81,7 +81,7 @@ QGroupBox:hover:!flat {
      <property name="flat">
       <bool>false</bool>
      </property>
-     <layout class="QGridLayout" name="gridLayout" columnstretch="2,0,0,0">
+     <layout class="QGridLayout" name="gridLayout" columnstretch="1,0,0,1">
       <property name="topMargin">
        <number>24</number>
       </property>
