@@ -27,3 +27,21 @@ global proc chartreuseContextValues(string $name) {
 global proc chartreuseContextFinish() {
   python "tearDownChartreuseUI()";
 }
+
+global proc chartreuseInstallShelf() {
+  if (`about -batch`) {
+    return;
+  }
+
+  if (!`shelfLayout -ex Chartreuse`) {
+    evalDeferred "loadNewShelf \"shelf_Chartreuse.mel\"";
+  }
+}
+
+global proc chartreuseBeginTool() {
+  if (!`chartreuseContext -ex globalChartreuseContext`) {
+    chartreuseContext globalChartreuseContext;
+  }
+
+  setToolTo globalChartreuseContext;
+}

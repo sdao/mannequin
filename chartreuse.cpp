@@ -400,6 +400,7 @@ MStatus initializePlugin(MObject obj)
 
   status = MGlobal::executePythonCommand("from chartreuse import *");
   status = MGlobal::sourceFile("chartreuse.mel");
+  status = MGlobal::executeCommand("chartreuseInstallShelf");
 
   return status;
 }
