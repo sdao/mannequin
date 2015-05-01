@@ -101,7 +101,7 @@ class ChartreuseToolPanel():
         self.resizeEventFilter.remove()
         self.focusEventFilter.remove()
 
-        # Set up validator and parent it to the UI.
+        # Set up GUI number validator.
         if gui is None:
             self.validator = None
         else:
@@ -200,9 +200,9 @@ class ChartreuseToolPanel():
         self.focusEventFilter.install(self.panels)
 
         # Setup the rest of the UI and show it.
+        self.gui.typeToSearch.textChanged.connect(self.search)
         self.gui.layout().setAlignment(Qt.AlignTop)
-        self.gui.setMinimumHeight(self.gui.sizeHint().height())
-        self.parent.setMinimumHeight(self.gui.sizeHint().height())
+        self.relayout()
         self.gui.show()
 
     def dirtyPlugCallback(self, node, plug, *args, **kwargs):
@@ -264,6 +264,23 @@ class ChartreuseToolPanel():
         rotation = om.MEulerRotation()
         objectXform.getRotation(rotation)
         self.updatePanelGui(panelGui, rotation.x, rotation.y, rotation.z)
+
+    def search(self, text):
+        for name in self.panels:
+            if text.lower() in name.lower():
+                self.panels[name].show()
+            else:
+                self.panels[name].hide()
+
+        self.gui.layout().activate()
+        self.relayout()
+        QTimer.singleShot(0, self.relayout)
+
+    def relayout(self):
+        self.gui.setMinimumHeight(self.gui.sizeHint().height())
+        self.gui.setMaximumHeight(self.gui.sizeHint().height())
+        self.parent.setMinimumHeight(self.gui.sizeHint().height())
+        self.parent.setMaximumHeight(self.gui.sizeHint().height())
 
 
 # Singleton object, global state.
