@@ -34,6 +34,7 @@ public:
   virtual MStatus doPress(MEvent& event);
   virtual void abortAction() override;
   void doPress();
+  void updateText();
 
 private:
   static constexpr float ROTATE_MANIP_SCALE = 5.0f;

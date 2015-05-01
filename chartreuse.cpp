@@ -29,7 +29,7 @@ void ChartreuseContext::select(const MDagPath& dagPath) {
   if (_selection == dagPath) {
     return;
   }
-  
+
   _selection = dagPath;
 
   MDagPath oldHighlight;
@@ -61,6 +61,8 @@ void ChartreuseContext::select(const MDagPath& dagPath) {
   pythonSelectionCallback.format("chartreuseSelectionChanged(\"^1s\")",
     _selection.fullPathName());
   MGlobal::executePythonCommand(pythonSelectionCallback);
+
+  updateText();
 }
 
 MDagPath ChartreuseContext::selectionDagPath() const {
@@ -226,6 +228,8 @@ void ChartreuseContext::toolOnSetup(MEvent& event) {
   _meshDagPath = dagPath;
   _skinObject = skinObj;
   MGlobal::clearSelectionList();
+
+  updateText();
 }
 
 void ChartreuseContext::toolOffCleanup() {
@@ -264,6 +268,18 @@ void ChartreuseContext::doPress() {
 
 void ChartreuseContext::abortAction() {
   select(MDagPath());
+}
+
+void ChartreuseContext::updateText() {
+  setTitleString("Chartreuse");
+  if (_selection.isValid()) {
+    MString help;
+    help.format("^1s selected, press ESC to deselect",
+      _selection.partialPathName());
+    setHelpString(help);
+  } else {
+    setHelpString("Click on the mesh to select a part");
+  }
 }
 
 ChartreuseContextCommand::ChartreuseContextCommand()
