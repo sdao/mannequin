@@ -229,6 +229,9 @@ void ChartreuseContext::toolOnSetup(MEvent& event) {
   _skinObject = skinObj;
   MGlobal::clearSelectionList();
 
+  // Set image, title text, etc.
+  setImage("chartreuse_32.png", MPxContext::kImage1);
+  setTitleString("Chartreuse");
   updateText();
 }
 
@@ -271,7 +274,6 @@ void ChartreuseContext::abortAction() {
 }
 
 void ChartreuseContext::updateText() {
-  setTitleString("Chartreuse");
   if (_selection.isValid()) {
     MString help;
     help.format("^1s selected, press ESC to deselect",
