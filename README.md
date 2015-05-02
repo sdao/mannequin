@@ -1,5 +1,7 @@
 Chartreuse
 ==========
+![Chartreuse icon](icons/chartreuse_32.png)
+
 Chartreuse is a plugin for Maya that allows you to animate a character rig
 by interacting directly with the character mesh. Simply hover over the mesh,
 and Chartreuse will detect and highlight parts of the mesh corresponding to
