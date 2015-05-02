@@ -22,7 +22,9 @@ to copy and modify the Makefile appropriate for your operating system.
 Screenshots
 ===========
 ![Chartreuse manipulators in the viewport](screenshots/manipulators.png)
+
 In this image, the right arm has an active manipulator and can be rotated. The pointer is hovered over the left arm, which highlights it in the viewport.
 
 ![Chartreuse side panel](screenshots/panel.png)
+
 Chartreuse also has a panel containing an editor for each joint in the rig. By typing in the search bar at the top, you can filter the joints.
