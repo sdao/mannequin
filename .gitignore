@@ -7,6 +7,14 @@
 # Compiled Bundles
 *.bundle
 
+# Symlinks
+chartreuse_module/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
 # Precompiled Headers
 *.gch
 *.pch
