@@ -36,12 +36,12 @@ endif
 SRCDIR := .
 DSTDIR := .
 
-chartreuse_SOURCES  := $(SRCDIR)/chartreuse.cpp \
-	$(SRCDIR)/chartreuse_manipulator.cpp
-chartreuse_OBJECTS  := $(SRCDIR)/chartreuse.o \
-	$(SRCDIR)/chartreuse_manipulator.o
-chartreuse_PLUGIN   := $(DSTDIR)/chartreuse.$(EXT)
-chartreuse_MAKEFILE := $(DSTDIR)/Makefile
+mannequin_SOURCES  := $(SRCDIR)/mannequin.cpp \
+	$(SRCDIR)/mannequin_manipulator.cpp
+mannequin_OBJECTS  := $(SRCDIR)/mannequin.o \
+	$(SRCDIR)/mannequin_manipulator.o
+mannequin_PLUGIN   := $(DSTDIR)/mannequin.$(EXT)
+mannequin_MAKEFILE := $(DSTDIR)/Makefile
 
 #
 # Include the optional per-plugin Makefile.inc
@@ -58,38 +58,38 @@ chartreuse_MAKEFILE := $(DSTDIR)/Makefile
 # Set target specific flags.
 #
 
-$(chartreuse_OBJECTS): CFLAGS   := $(CFLAGS)   $(chartreuse_EXTRA_CFLAGS)
-$(chartreuse_OBJECTS): C++FLAGS := $(C++FLAGS) $(chartreuse_EXTRA_C++FLAGS)
-$(chartreuse_OBJECTS): INCLUDES := $(INCLUDES) $(chartreuse_EXTRA_INCLUDES)
+$(mannequin_OBJECTS): CFLAGS   := $(CFLAGS)   $(mannequin_EXTRA_CFLAGS)
+$(mannequin_OBJECTS): C++FLAGS := $(C++FLAGS) $(mannequin_EXTRA_C++FLAGS)
+$(mannequin_OBJECTS): INCLUDES := $(INCLUDES) $(mannequin_EXTRA_INCLUDES)
 
-depend_chartreuse:     INCLUDES := $(INCLUDES) $(chartreuse_EXTRA_INCLUDES)
+depend_mannequin:     INCLUDES := $(INCLUDES) $(mannequin_EXTRA_INCLUDES)
 
-$(chartreuse_PLUGIN):  LFLAGS   := $(LFLAGS) $(chartreuse_EXTRA_LFLAGS)
-$(chartreuse_PLUGIN):  LIBS     := $(LIBS)   -lOpenMaya -lOpenMayaUI \
-	-lOpenMayaAnim -lOpenMayaRender -lFoundation $(chartreuse_EXTRA_LIBS)
+$(mannequin_PLUGIN):  LFLAGS   := $(LFLAGS) $(mannequin_EXTRA_LFLAGS)
+$(mannequin_PLUGIN):  LIBS     := $(LIBS)   -lOpenMaya -lOpenMayaUI \
+	-lOpenMayaAnim -lOpenMayaRender -lFoundation $(mannequin_EXTRA_LIBS)
 
 #
 # Rules definitions
 #
 
-.PHONY: depend_chartreuse clean_chartreuse Clean_chartreuse
+.PHONY: depend_mannequin clean_mannequin Clean_mannequin
 
 
-$(chartreuse_PLUGIN): $(chartreuse_OBJECTS)
+$(mannequin_PLUGIN): $(mannequin_OBJECTS)
 	-rm -f $@
 	$(LD) -o $@ $(LFLAGS) $^ $(LIBS)
 
-depend_chartreuse :
-	makedepend $(INCLUDES) $(MDFLAGS) -f$(DSTDIR)/Makefile $(chartreuse_SOURCES)
+depend_mannequin :
+	makedepend $(INCLUDES) $(MDFLAGS) -f$(DSTDIR)/Makefile $(mannequin_SOURCES)
 
-clean_chartreuse:
-	-rm -f $(chartreuse_OBJECTS)
+clean_mannequin:
+	-rm -f $(mannequin_OBJECTS)
 
-Clean_chartreuse:
-	-rm -f $(chartreuse_MAKEFILE).bak $(chartreuse_OBJECTS) $(chartreuse_PLUGIN)
+Clean_mannequin:
+	-rm -f $(mannequin_MAKEFILE).bak $(mannequin_OBJECTS) $(mannequin_PLUGIN)
 
 
-plugins: $(chartreuse_PLUGIN)
-depend:	 depend_chartreuse
-clean:	 clean_chartreuse
-Clean:	 Clean_chartreuse
+plugins: $(mannequin_PLUGIN)
+depend:	 depend_mannequin
+clean:	 clean_mannequin
+Clean:	 Clean_mannequin

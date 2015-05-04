@@ -1,5 +1,5 @@
-#include "chartreuse.h"
-#include "chartreuse_manipulator.h"
+#include "mannequin.h"
+#include "mannequin_manipulator.h"
 #include "util.h"
 
 #include <limits>
@@ -15,17 +15,17 @@
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MDagPathArray.h>
 
-ChartreuseContext::ChartreuseContext() : _maxInfluences(NULL) {}
+MannequinContext::MannequinContext() : _maxInfluences(NULL) {}
 
-ChartreuseContext::~ChartreuseContext() {
+MannequinContext::~MannequinContext() {
   delete[] _maxInfluences;
 }
 
-void ChartreuseContext::forceExit() {
+void MannequinContext::forceExit() {
   MGlobal::executeCommand("setToolTo $gSelect");
 }
 
-void ChartreuseContext::select(const MDagPath& dagPath) {
+void MannequinContext::select(const MDagPath& dagPath) {
   if (_selection == dagPath) {
     return;
   }
@@ -33,12 +33,12 @@ void ChartreuseContext::select(const MDagPath& dagPath) {
   _selection = dagPath;
 
   MDagPath oldHighlight;
-  if (_chartreuseManip) {
+  if (_mannequinManip) {
     // Preserve old highlight while transitioning manipulators.
-    oldHighlight = _chartreuseManip->highlightedDagPath();
+    oldHighlight = _mannequinManip->highlightedDagPath();
   }
   deleteManipulators();
-  addChartreuseManipulator(oldHighlight);
+  addMannequinManipulator(oldHighlight);
 
   MFnRotateManip rotateManip(_rotateManip);
   if (_selection.hasFn(MFn::kTransform)) {
@@ -58,18 +58,18 @@ void ChartreuseContext::select(const MDagPath& dagPath) {
   }
 
   MString pythonSelectionCallback;
-  pythonSelectionCallback.format("chartreuseSelectionChanged(\"^1s\")",
+  pythonSelectionCallback.format("mannequinSelectionChanged(\"^1s\")",
     _selection.fullPathName());
   MGlobal::executePythonCommand(pythonSelectionCallback);
 
   updateText();
 }
 
-MDagPath ChartreuseContext::selectionDagPath() const {
+MDagPath MannequinContext::selectionDagPath() const {
   return _selection;
 }
 
-void ChartreuseContext::calculateMaxInfluences(MDagPath dagPath,
+void MannequinContext::calculateMaxInfluences(MDagPath dagPath,
   MObject skinObj) {
   MFnMesh mesh(dagPath);
   MFnSkinCluster skin(skinObj);
@@ -116,34 +116,34 @@ void ChartreuseContext::calculateMaxInfluences(MDagPath dagPath,
   }
 }
 
-const unsigned int* ChartreuseContext::maxInfluences() const {
+const unsigned int* MannequinContext::maxInfluences() const {
   return _maxInfluences;
 }
 
-MDagPath ChartreuseContext::meshDagPath() const {
+MDagPath MannequinContext::meshDagPath() const {
   return _meshDagPath;
 }
 
-MObject ChartreuseContext::skinObject() const {
+MObject MannequinContext::skinObject() const {
   return _skinObject;
 }
 
-bool ChartreuseContext::addChartreuseManipulator(MDagPath newHighlight) {
-  MObject chartreuseManipObj;
+bool MannequinContext::addMannequinManipulator(MDagPath newHighlight) {
+  MObject mannequinManipObj;
   MStatus err;
-  _chartreuseManip = (ChartreuseManipulator*)MPxManipulatorNode::newManipulator(
-    "ChartreuseManipulator", chartreuseManipObj, &err);
+  _mannequinManip = (MannequinManipulator*)MPxManipulatorNode::newManipulator(
+    "MannequinManipulator", mannequinManipObj, &err);
 
   if (err.error()) {
     return false;
   }
 
-  _chartreuseManip->setup(this, newHighlight);
-  addManipulator(chartreuseManipObj);
+  _mannequinManip->setup(this, newHighlight);
+  addManipulator(mannequinManipObj);
   return true;
 }
 
-bool ChartreuseContext::intersectRotateManip(MPoint linePoint,
+bool MannequinContext::intersectRotateManip(MPoint linePoint,
   MVector lineDirection,
   float* distanceOut) {
   if (_rotateManip.isNull()) {
@@ -164,7 +164,7 @@ bool ChartreuseContext::intersectRotateManip(MPoint linePoint,
     distanceOut);
 }
 
-void ChartreuseContext::toolOnSetup(MEvent& event) {
+void MannequinContext::toolOnSetup(MEvent& event) {
   MSelectionList list;
   MGlobal::getActiveSelectionList(list);
 
@@ -218,7 +218,7 @@ void ChartreuseContext::toolOnSetup(MEvent& event) {
   calculateMaxInfluences(dagPath, skinObj);
 
   // Finally add the manipulator.
-  bool didAdd = addChartreuseManipulator();
+  bool didAdd = addMannequinManipulator();
   if (!didAdd) {
     MGlobal::displayError("Could not create manipulator");
     forceExit();
@@ -230,53 +230,53 @@ void ChartreuseContext::toolOnSetup(MEvent& event) {
   MGlobal::clearSelectionList();
 
   // Set image, title text, etc.
-  setImage("chartreuse_32.png", MPxContext::kImage1);
-  setTitleString("Chartreuse");
+  setImage("mannequin_32.png", MPxContext::kImage1);
+  setTitleString("Mannequin");
   updateText();
 }
 
-void ChartreuseContext::toolOffCleanup() {
+void MannequinContext::toolOffCleanup() {
   select(MDagPath());
 
-  _chartreuseManip = NULL;
+  _mannequinManip = NULL;
   _rotateManip = MObject::kNullObj;
 
   deleteManipulators();
   MGlobal::clearSelectionList();
-  MGlobal::executeCommand("chartreuseContextFinish");
+  MGlobal::executeCommand("mannequinContextFinish");
 }
 
-void ChartreuseContext::getClassName(MString& name) const {
+void MannequinContext::getClassName(MString& name) const {
   // Note: when setToolTo is called from MEL, Maya will try to load
-  // chartreuseContextProperties and chartreuseContextValues.
-  name.set("chartreuseContext");
+  // mannequinContextProperties and mannequinContextValues.
+  name.set("mannequinContext");
 }
 
-MStatus ChartreuseContext::doPress(MEvent& event,
+MStatus MannequinContext::doPress(MEvent& event,
   MHWRender::MUIDrawManager& drawMgr,
   const MHWRender::MFrameContext& context) {
   doPress();
   return MS::kSuccess;
 }
 
-MStatus ChartreuseContext::doPress(MEvent& event) {
+MStatus MannequinContext::doPress(MEvent& event) {
   doPress();
   return MS::kSuccess;
 }
 
-void ChartreuseContext::doPress() {
-  if (!_chartreuseManip) {
+void MannequinContext::doPress() {
+  if (!_mannequinManip) {
     return;
   }
 
-  select(_chartreuseManip->highlightedDagPath());
+  select(_mannequinManip->highlightedDagPath());
 }
 
-void ChartreuseContext::abortAction() {
+void MannequinContext::abortAction() {
   select(MDagPath());
 }
 
-void ChartreuseContext::updateText() {
+void MannequinContext::updateText() {
   if (_selection.isValid()) {
     MString help;
     help.format("^1s selected, press ESC to deselect",
@@ -287,22 +287,22 @@ void ChartreuseContext::updateText() {
   }
 }
 
-ChartreuseContextCommand::ChartreuseContextCommand()
-  : _chartreuseContext(NULL) {}
+MannequinContextCommand::MannequinContextCommand()
+  : _mannequinContext(NULL) {}
 
-MPxContext* ChartreuseContextCommand::makeObj() {
-  _chartreuseContext = new ChartreuseContext();
-  return _chartreuseContext;
+MPxContext* MannequinContextCommand::makeObj() {
+  _mannequinContext = new MannequinContext();
+  return _mannequinContext;
 }
 
-void* ChartreuseContextCommand::creator() {
-  return new ChartreuseContextCommand;
+void* MannequinContextCommand::creator() {
+  return new MannequinContextCommand;
 }
 
-MStatus ChartreuseContextCommand::doEditFlags() {
+MStatus MannequinContextCommand::doEditFlags() {
   MArgParser parse = parser();
 
-  if (!_chartreuseContext) {
+  if (!_mannequinContext) {
     return MS::kInvalidParameter;
   }
 
@@ -312,7 +312,7 @@ MStatus ChartreuseContextCommand::doEditFlags() {
     MString arg = parse.flagArgumentString("-sel", 0);
 
     MStatus err;
-    MFnSkinCluster skin(_chartreuseContext->skinObject(), &err);
+    MFnSkinCluster skin(_mannequinContext->skinObject(), &err);
     if (err.error()) {
       return err;
     }
@@ -325,7 +325,7 @@ MStatus ChartreuseContextCommand::doEditFlags() {
       MString partialName = influenceObjects[i].partialPathName();
 
       if (arg == fullName || arg == partialName) {
-        _chartreuseContext->select(influenceObjects[i]);
+        _mannequinContext->select(influenceObjects[i]);
         return MS::kSuccess;
       }
     }
@@ -338,16 +338,16 @@ MStatus ChartreuseContextCommand::doEditFlags() {
   return MS::kSuccess;
 }
 
-MStatus ChartreuseContextCommand::doQueryFlags() {
+MStatus MannequinContextCommand::doQueryFlags() {
   MArgParser parse = parser();
 
-  if (!_chartreuseContext) {
+  if (!_mannequinContext) {
     return MS::kInvalidParameter;
   }
 
   if (parse.isFlagSet("-io")) {
     MStatus err;
-    MFnSkinCluster skin(_chartreuseContext->skinObject(), &err);
+    MFnSkinCluster skin(_mannequinContext->skinObject(), &err);
     if (err.error()) {
       return err;
     }
@@ -366,7 +366,7 @@ MStatus ChartreuseContextCommand::doQueryFlags() {
 
     setResult(result);
   } else if (parse.isFlagSet("-sel")) {
-    MDagPath dagPath = _chartreuseContext->selectionDagPath();
+    MDagPath dagPath = _mannequinContext->selectionDagPath();
     MString result;
     if (dagPath.isValid()) {
       result = MString(dagPath.fullPathName());
@@ -380,7 +380,7 @@ MStatus ChartreuseContextCommand::doQueryFlags() {
   return MS::kSuccess;
 }
 
-MStatus ChartreuseContextCommand::appendSyntax() {
+MStatus MannequinContextCommand::appendSyntax() {
 	MSyntax syn = syntax();
 
   syn.addFlag("-io", "-influenceObjects");
@@ -394,18 +394,18 @@ MStatus initializePlugin(MObject obj)
   MStatus status;
   MFnPlugin plugin(obj, "Steven Dao", "0.1", "Any");
 
-  status = plugin.registerContextCommand("chartreuseContext",
-    ChartreuseContextCommand::creator);
+  status = plugin.registerContextCommand("mannequinContext",
+    MannequinContextCommand::creator);
 
-  status = plugin.registerNode("ChartreuseManipulator",
-    ChartreuseManipulator::id,
-    &ChartreuseManipulator::creator,
-    &ChartreuseManipulator::initialize,
+  status = plugin.registerNode("MannequinManipulator",
+    MannequinManipulator::id,
+    &MannequinManipulator::creator,
+    &MannequinManipulator::initialize,
     MPxNode::kManipulatorNode);
 
-  status = MGlobal::executePythonCommand("from chartreuse import *");
-  status = MGlobal::sourceFile("chartreuse.mel");
-  status = MGlobal::executeCommand("chartreuseInstallShelf");
+  status = MGlobal::executePythonCommand("from mannequin import *");
+  status = MGlobal::sourceFile("mannequin.mel");
+  status = MGlobal::executeCommand("mannequinInstallShelf");
 
   return status;
 }
@@ -415,8 +415,8 @@ MStatus uninitializePlugin(MObject obj)
   MStatus status;
   MFnPlugin plugin(obj);
 
-  status = plugin.deregisterContextCommand("chartreuseContext");
-  status = plugin.deregisterNode(ChartreuseManipulator::id);
+  status = plugin.deregisterContextCommand("mannequinContext");
+  status = plugin.deregisterNode(MannequinManipulator::id);
 
   return status;
 }

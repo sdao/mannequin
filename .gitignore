@@ -8,7 +8,7 @@
 *.bundle
 
 # Symlinks
-chartreuse_module/
+mannequin_module/
 
 # Python
 __pycache__/

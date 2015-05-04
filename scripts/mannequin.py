@@ -7,8 +7,8 @@ from PySide.QtGui import *
 from PySide.QtUiTools import *
 from shiboken import wrapInstance
 
-from chartreuse_style import ChartreuseStylesheets
-from chartreuse_widgets import DragWidget
+from mannequin_style import MannequinStylesheets
+from mannequin_widgets import DragWidget
 
 import os
 from functools import partial
@@ -74,9 +74,9 @@ class FocusEventFilter(QObject):
 
     def selectNode(self, nodeName):
         currentContext = cmds.currentCtx()
-        cmds.chartreuseContext(currentContext, e=True, sel=nodeName)
+        cmds.mannequinContext(currentContext, e=True, sel=nodeName)
 
-class ChartreuseToolPanel():
+class MannequinToolPanel():
     def __init__(self):
         self.loader = QUiLoader()
         self.resizeEventFilter = ResizeEventFilter()
@@ -164,11 +164,11 @@ class ChartreuseToolPanel():
 
         # Set object color and name.
         if color % 3 == 0:
-            panelGui.groupBox.setStyleSheet(ChartreuseStylesheets.STYLE_BLUE)
+            panelGui.groupBox.setStyleSheet(MannequinStylesheets.STYLE_BLUE)
         elif color % 3 == 1:
-            panelGui.groupBox.setStyleSheet(ChartreuseStylesheets.STYLE_GREEN)
+            panelGui.groupBox.setStyleSheet(MannequinStylesheets.STYLE_GREEN)
         else:
-            panelGui.groupBox.setStyleSheet(ChartreuseStylesheets.STYLE_RED)
+            panelGui.groupBox.setStyleSheet(MannequinStylesheets.STYLE_RED)
         panelGui.groupBox.setTitle(nodeName)
 
         # Set current object rotation.
@@ -287,30 +287,30 @@ class ChartreuseToolPanel():
 
 
 # Singleton object, global state.
-chartreuseToolPanel = ChartreuseToolPanel()
+mannequinToolPanel = MannequinToolPanel()
 
 
-def setupChartreuseUI():
+def setupMannequinUI():
     currentContext = cmds.currentCtx()
-    influenceObjectsStr = cmds.chartreuseContext(currentContext,
+    influenceObjectsStr = cmds.mannequinContext(currentContext,
                                                  q=True,
                                                  io=True)
     influenceObjects = influenceObjectsStr.split(" ")
 
-    chartreuseDockPtr = ui.MQtUtil.findLayout("chartreusePaletteDock")
-    chartreuseDock = wrapInstance(long(chartreuseDockPtr), QWidget)
-    chartreuseLayoutPtr = ui.MQtUtil.findLayout("chartreusePaletteLayout")
-    chartreuseLayout = wrapInstance(long(chartreuseLayoutPtr), QWidget)
-    chartreuseSearchPtr = ui.MQtUtil.findControl("chartreuseSearchField")
-    chartreuseSearch = wrapInstance(long(chartreuseSearchPtr), QLineEdit)
+    mannequinDockPtr = ui.MQtUtil.findLayout("mannequinPaletteDock")
+    mannequinDock = wrapInstance(long(mannequinDockPtr), QWidget)
+    mannequinLayoutPtr = ui.MQtUtil.findLayout("mannequinPaletteLayout")
+    mannequinLayout = wrapInstance(long(mannequinLayoutPtr), QWidget)
+    mannequinSearchPtr = ui.MQtUtil.findControl("mannequinSearchField")
+    mannequinSearch = wrapInstance(long(mannequinSearchPtr), QLineEdit)
 
-    file = QFile(os.path.join(os.path.dirname(__file__), "chartreuse.ui"))
+    file = QFile(os.path.join(os.path.dirname(__file__), "mannequin.ui"))
     file.open(QFile.ReadOnly)
-    gui = chartreuseToolPanel.loader.load(file, parentWidget=chartreuseLayout)
+    gui = mannequinToolPanel.loader.load(file, parentWidget=mannequinLayout)
     file.close()
 
-    chartreuseDock.setMinimumWidth(300)
-    chartreuseToolPanel.reset(chartreuseLayout, gui, chartreuseSearch)
+    mannequinDock.setMinimumWidth(300)
+    mannequinToolPanel.reset(mannequinLayout, gui, mannequinSearch)
 
     selList = om.MSelectionList()
     for obj in influenceObjects:
@@ -326,9 +326,9 @@ def setupChartreuseUI():
 
     jointDisplays = organizeJoints(joints)
     for jointDisplay in jointDisplays:
-        chartreuseToolPanel.layoutJointDisplay(jointDisplay)
+        mannequinToolPanel.layoutJointDisplay(jointDisplay)
 
-    chartreuseToolPanel.finishLayout()
+    mannequinToolPanel.finishLayout()
 
 
 def organizeJoints(joints):
@@ -497,16 +497,16 @@ def organizeJoints(joints):
     return zip(jointPairs, jointColors)
 
 
-def chartreuseSelectionChanged(dagString):
+def mannequinSelectionChanged(dagString):
     try:
         selList = om.MSelectionList()
         selList.add(dagString)
         dagPath = om.MDagPath()
         selList.getDagPath(0, dagPath)
-        chartreuseToolPanel.select(dagPath)
+        mannequinToolPanel.select(dagPath)
     except:
-        chartreuseToolPanel.select(None)
+        mannequinToolPanel.select(None)
 
 
-def tearDownChartreuseUI():
-    chartreuseToolPanel.reset(None, None, None)
+def tearDownMannequinUI():
+    mannequinToolPanel.reset(None, None, None)

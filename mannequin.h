@@ -7,12 +7,12 @@
 #include <maya/MPoint.h>
 #include <maya/MVector.h>
 
-class ChartreuseManipulator;
+class MannequinManipulator;
 
-class ChartreuseContext : public MPxContext {
+class MannequinContext : public MPxContext {
 public:
-  ChartreuseContext();
-  ~ChartreuseContext();
+  MannequinContext();
+  ~MannequinContext();
   void forceExit();
   void select(const MDagPath& dagPath);
   MDagPath selectionDagPath() const;
@@ -20,7 +20,7 @@ public:
   const unsigned int* maxInfluences() const;
   MDagPath meshDagPath() const;
   MObject skinObject() const;
-  bool addChartreuseManipulator(MDagPath newHighlight = MDagPath());
+  bool addMannequinManipulator(MDagPath newHighlight = MDagPath());
   bool intersectRotateManip(MPoint linePoint,
     MVector lineDirection,
     float* distanceOut);
@@ -44,14 +44,14 @@ private:
   unsigned int* _maxInfluences;
 
   MDagPath _selection;
-  ChartreuseManipulator* _chartreuseManip;
+  MannequinManipulator* _mannequinManip;
   MObject _rotateManip;
 };
 
-class ChartreuseContextCommand : public MPxContextCommand
+class MannequinContextCommand : public MPxContextCommand
 {
 public:
-  ChartreuseContextCommand();
+  MannequinContextCommand();
   virtual MPxContext* makeObj() override;
   static void* creator();
   virtual MStatus doEditFlags() override;
@@ -59,5 +59,5 @@ public:
   virtual MStatus appendSyntax() override;
 
 private:
-  ChartreuseContext* _chartreuseContext;
+  MannequinContext* _mannequinContext;
 };

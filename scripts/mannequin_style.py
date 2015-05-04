@@ -1,4 +1,4 @@
-class ChartreuseStylesheets():
+class MannequinStylesheets():
     STYLE_BLUE = """
 QGroupBox {
     border: 1px solid white;

@@ -1,5 +1,5 @@
-#include "chartreuse_manipulator.h"
-#include "chartreuse.h"
+#include "mannequin_manipulator.h"
+#include "mannequin.h"
 
 #include <iostream>
 
@@ -13,17 +13,17 @@
 #include <maya/MGlobal.h>
 #include <maya/MFnManip3D.h>
 
-const MTypeId ChartreuseManipulator::id = MTypeId(0xcafecab);
+const MTypeId MannequinManipulator::id = MTypeId(0xcafecab);
 
-ChartreuseManipulator::ChartreuseManipulator() : _ctx(NULL) {}
+MannequinManipulator::MannequinManipulator() : _ctx(NULL) {}
 
-void ChartreuseManipulator::setup(ChartreuseContext* ctx,
+void MannequinManipulator::setup(MannequinContext* ctx,
   MDagPath newHighlight) {
   _ctx = ctx;
   _highlight = newHighlight;
 }
 
-MDagPath ChartreuseManipulator::highlightedDagPath() const {
+MDagPath MannequinManipulator::highlightedDagPath() const {
   if (!_highlight.hasFn(MFn::kTransform)) {
     return MDagPath();
   }
@@ -31,11 +31,11 @@ MDagPath ChartreuseManipulator::highlightedDagPath() const {
   return _highlight;
 }
 
-void ChartreuseManipulator::postConstructor() {
+void MannequinManipulator::postConstructor() {
   registerForMouseMove();
 }
 
-MStatus ChartreuseManipulator::doMove(M3dView& view, bool& refresh) {
+MStatus MannequinManipulator::doMove(M3dView& view, bool& refresh) {
   MPoint linePoint;
   MVector lineDirection;
   mouseRayWorld(linePoint, lineDirection);
@@ -98,7 +98,7 @@ MStatus ChartreuseManipulator::doMove(M3dView& view, bool& refresh) {
   return MS::kSuccess;
 }
 
-MStatus ChartreuseManipulator::doMoveError(bool& refresh) {
+MStatus MannequinManipulator::doMoveError(bool& refresh) {
   if (_highlight.isValid()) {
     // Highlight was valid, so we need to clear it now.
     _highlight = MDagPath();
@@ -118,7 +118,7 @@ MStatus ChartreuseManipulator::doMoveError(bool& refresh) {
   return MS::kUnknownParameter;
 }
 
-void ChartreuseManipulator::draw(M3dView &view,
+void MannequinManipulator::draw(M3dView &view,
   const MDagPath &path,
   M3dView::DisplayStyle style,
   M3dView::DisplayStatus status) {
@@ -126,9 +126,9 @@ void ChartreuseManipulator::draw(M3dView &view,
   // in the Legacy Viewport.
 }
 
-void ChartreuseManipulator::preDrawUI(const M3dView &view) {}
+void MannequinManipulator::preDrawUI(const M3dView &view) {}
 
-void ChartreuseManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
+void MannequinManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
   const MHWRender::MFrameContext &frameContext) const {
   if (!_highlight.hasFn(MFn::kTransform)) {
     return;
@@ -172,10 +172,10 @@ void ChartreuseManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
   drawManager.endDrawable();
 }
 
-void* ChartreuseManipulator::creator() {
-  return new ChartreuseManipulator;
+void* MannequinManipulator::creator() {
+  return new MannequinManipulator;
 }
 
-MStatus ChartreuseManipulator::initialize() {
+MStatus MannequinManipulator::initialize() {
   return MS::kSuccess;
 }

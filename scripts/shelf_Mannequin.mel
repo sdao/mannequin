@@ -1,4 +1,4 @@
-global proc shelf_Chartreuse () {
+global proc shelf_Mannequin () {
     shelfButton
         -enableCommandRepeat 1
         -enable 1
@@ -7,7 +7,7 @@ global proc shelf_Chartreuse () {
         -manage 1
         -visible 1
         -preventOverride 0
-        -annotation "Chartreuse"
+        -annotation "Mannequin"
         -enableBackground 0
         -align "center"
         -label "User Script"
@@ -15,12 +15,12 @@ global proc shelf_Chartreuse () {
         -font "plainLabelFont"
         -overlayLabelColor 0.8 0.8 0.8
         -overlayLabelBackColor 0 0 0 0.2
-        -image "chartreuse_32.png"
-        -image1 "chartreuse_32.png"
+        -image "mannequin_32.png"
+        -image1 "mannequin_32.png"
         -style "iconOnly"
         -marginWidth 1
         -marginHeight 1
-        -command "chartreuseTool"
+        -command "mannequinTool"
         -sourceType "mel"
         -commandRepeatable 1
         -flat 1

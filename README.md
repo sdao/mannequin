@@ -1,13 +1,13 @@
-Chartreuse
+Mannequin
 ==========
-![Chartreuse icon](icons/chartreuse_32.png)
+![Mannequin icon](icons/mannequin_32.png)
 
-Chartreuse is a plugin for Maya that allows you to animate a character rig
+Mannequin is a plugin for Maya that allows you to animate a character rig
 by interacting directly with the character mesh. Simply hover over the mesh,
-and Chartreuse will detect and highlight parts of the mesh corresponding to
+and Mannequin will detect and highlight parts of the mesh corresponding to
 different bones in the rig.
 
-Chartreuse also includes a convenient side panel that gives you quick access
+Mannequin also includes a convenient side panel that gives you quick access
 to all the joints in your rig and allows you to search through them.
 
 Packaging/Installation
@@ -23,10 +23,10 @@ to copy and modify the Makefile appropriate for your operating system.
 
 Screenshots
 ===========
-![Chartreuse manipulators in the viewport](screenshots/manipulators.png)
+![Mannequin manipulators in the viewport](screenshots/manipulators.png)
 
 In this image, the right arm has an active manipulator and can be rotated. The pointer is hovered over the left arm, which highlights it in the viewport.
 
-![Chartreuse side panel](screenshots/panel.png)
+![Mannequin side panel](screenshots/panel.png)
 
-Chartreuse also has a panel containing an editor for each joint in the rig. By typing in the search bar at the top, you can filter the joints.
+Mannequin also has a panel containing an editor for each joint in the rig. By typing in the search bar at the top, you can filter the joints.

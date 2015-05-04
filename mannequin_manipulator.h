@@ -3,12 +3,12 @@
 #include <maya/MPxManipulatorNode.h>
 #include <maya/MDagPath.h>
 
-class ChartreuseContext;
+class MannequinContext;
 
-class ChartreuseManipulator : public MPxManipulatorNode {
+class MannequinManipulator : public MPxManipulatorNode {
 public:
-  ChartreuseManipulator();
-  void setup(ChartreuseContext* ctx, MDagPath newHighlight = MDagPath());
+  MannequinManipulator();
+  void setup(MannequinContext* ctx, MDagPath newHighlight = MDagPath());
   MDagPath highlightedDagPath() const;
 
   virtual void postConstructor() override;
@@ -27,6 +27,6 @@ public:
   static const MTypeId id;
 
 private:
-  ChartreuseContext* _ctx;
+  MannequinContext* _ctx;
   MDagPath _highlight;
 };

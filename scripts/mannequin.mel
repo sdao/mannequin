@@ -1,0 +1,79 @@
+global proc mannequinContextProperties() {
+  setUITemplate -pushTemplate DefaultTemplate;
+
+  string $label = `toolPropertyWindow -q -field`;
+  text -e -label "Mannequin Settings" $label;
+
+  string $parent = `toolPropertyWindow -q -location`;
+  setParent $parent;
+
+  if (`columnLayout -ex mannequinSettingsLayout`) {
+      deleteUI mannequinSettingsLayout;
+  }
+
+  columnLayout -adjustableColumn true mannequinSettingsLayout;
+    separator -height 5 -style "none";
+    button -label "Show Mannequin Palette" -command "mannequinPaletteBegin";
+    separator -height 10 -style "none";
+
+  setUITemplate -popTemplate;
+  mannequinPaletteBegin;
+}
+
+global proc mannequinContextValues(string $name) {
+  toolPropertySelect mannequinSettingsLayout;
+}
+
+global proc mannequinContextFinish() {
+  mannequinPaletteFinish;
+}
+
+global proc mannequinPaletteBegin() {
+  if (!`dockControl -ex mannequinPaletteDock`) {
+    window mannequinPaletteWindow;
+    menuBarLayout;
+      textField mannequinSearchField;
+      separator -height 5 -style "none";
+    setParent ..;
+    scrollLayout -childResizable true;
+      columnLayout -adjustableColumn true mannequinPaletteLayout;
+      setParent ..;
+    setParent ..;
+
+    dockControl -area "right"
+                -content mannequinPaletteWindow
+                -label "Mannequin"
+                -allowedArea "left"
+                -allowedArea "right" mannequinPaletteDock;
+
+    // The rest of the palette UI is done in Python because it uses Qt/PySide.
+    python "setupMannequinUI()";
+  }
+
+  evalDeferred "dockControl -e -visible true -raise mannequinPaletteDock";
+}
+
+global proc mannequinPaletteFinish() {
+  python "tearDownMannequinUI()";
+  if (`dockControl -ex mannequinPaletteDock`) {
+    evalDeferred "deleteUI mannequinPaletteDock";
+  }
+}
+
+global proc mannequinInstallShelf() {
+  if (`about -batch`) {
+    return;
+  }
+
+  if (!`shelfLayout -ex Mannequin`) {
+    evalDeferred "loadNewShelf \"shelf_Mannequin.mel\"";
+  }
+}
+
+global proc mannequinTool() {
+  if (!`mannequinContext -ex globalMannequinContext`) {
+    mannequinContext globalMannequinContext;
+  }
+
+  setToolTo globalMannequinContext;
+}
