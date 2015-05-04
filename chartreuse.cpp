@@ -236,8 +236,11 @@ void ChartreuseContext::toolOnSetup(MEvent& event) {
 }
 
 void ChartreuseContext::toolOffCleanup() {
+  select(MDagPath());
+
   _chartreuseManip = NULL;
   _rotateManip = MObject::kNullObj;
+
   deleteManipulators();
   MGlobal::clearSelectionList();
   MGlobal::executeCommand("chartreuseContextFinish");

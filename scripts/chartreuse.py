@@ -37,7 +37,9 @@ class ResizeEventFilter(QObject):
                 self.source is not None and
                 self.target is not None):
             geometry = self.target.geometry()
-            geometry.setWidth(self.source.width())
+            sourceWidth = self.source.width()
+            minWidth = self.target.minimumWidth()
+            geometry.setWidth(max(sourceWidth, minWidth))
             self.target.setGeometry(geometry)
             return True
 
@@ -79,9 +81,9 @@ class ChartreuseToolPanel():
         self.loader = QUiLoader()
         self.resizeEventFilter = ResizeEventFilter()
         self.focusEventFilter = FocusEventFilter()
-        self.reset(None, None)
+        self.reset(None, None, None)
 
-    def reset(self, parent, gui):
+    def reset(self, parent, gui, searchField):
         # Cleanup callbacks.
         try:
             for x in self.callbacks:
@@ -94,6 +96,7 @@ class ChartreuseToolPanel():
         # Reset everything.
         self.parent = parent
         self.gui = gui
+        self.searchField = searchField
         self.dagPaths = {}
         self.panels = {}
         self.updateQueue = []
@@ -200,7 +203,7 @@ class ChartreuseToolPanel():
         self.focusEventFilter.install(self.panels)
 
         # Setup the rest of the UI and show it.
-        self.gui.typeToSearch.textChanged.connect(self.search)
+        self.searchField.textChanged.connect(self.search)
         self.gui.layout().setAlignment(Qt.AlignTop)
         self.relayout()
         self.gui.show()
@@ -294,18 +297,20 @@ def setupChartreuseUI():
                                                  io=True)
     influenceObjects = influenceObjectsStr.split(" ")
 
-    toolLayoutPath = cmds.toolPropertyWindow(query=True, location=True)
-    toolLayoutPtr = ui.MQtUtil.findLayout(toolLayoutPath)
-    chartreuseLayoutPtr = ui.MQtUtil.findLayout("chartreuseLayout",
-                                                long(toolLayoutPtr))
+    chartreuseDockPtr = ui.MQtUtil.findLayout("chartreusePaletteDock")
+    chartreuseDock = wrapInstance(long(chartreuseDockPtr), QWidget)
+    chartreuseLayoutPtr = ui.MQtUtil.findLayout("chartreusePaletteLayout")
     chartreuseLayout = wrapInstance(long(chartreuseLayoutPtr), QWidget)
+    chartreuseSearchPtr = ui.MQtUtil.findControl("chartreuseSearchField")
+    chartreuseSearch = wrapInstance(long(chartreuseSearchPtr), QLineEdit)
 
     file = QFile(os.path.join(os.path.dirname(__file__), "chartreuse.ui"))
     file.open(QFile.ReadOnly)
     gui = chartreuseToolPanel.loader.load(file, parentWidget=chartreuseLayout)
     file.close()
 
-    chartreuseToolPanel.reset(chartreuseLayout, gui)
+    chartreuseDock.setMinimumWidth(300)
+    chartreuseToolPanel.reset(chartreuseLayout, gui, chartreuseSearch)
 
     selList = om.MSelectionList()
     for obj in influenceObjects:
@@ -504,4 +509,4 @@ def chartreuseSelectionChanged(dagString):
 
 
 def tearDownChartreuseUI():
-    chartreuseToolPanel.reset(None, None)
+    chartreuseToolPanel.reset(None, None, None)
