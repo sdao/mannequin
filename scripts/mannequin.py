@@ -83,7 +83,7 @@ class MannequinToolPanel():
         self.focusEventFilter = FocusEventFilter()
         self.reset(None, None, None)
 
-    def reset(self, parent, gui, searchField):
+    def reset(self, parent, gui, searchField, prefixTrim=0):
         # Cleanup callbacks.
         try:
             for x in self.callbacks:
@@ -97,6 +97,7 @@ class MannequinToolPanel():
         self.parent = parent
         self.gui = gui
         self.searchField = searchField
+        self.prefixTrim = prefixTrim
         self.dagPaths = {}
         self.panels = {}
         self.updateQueue = []
@@ -169,7 +170,12 @@ class MannequinToolPanel():
             panelGui.groupBox.setStyleSheet(MannequinStylesheets.STYLE_GREEN)
         else:
             panelGui.groupBox.setStyleSheet(MannequinStylesheets.STYLE_RED)
-        panelGui.groupBox.setTitle(nodeName)
+
+        if len(nodeName) > self.prefixTrim:
+            trimmedName = nodeName[self.prefixTrim:]
+        else:
+            trimmedName = nodeName
+        panelGui.groupBox.setTitle(trimmedName)
 
         # Set current object rotation.
         objectXform = om.MFnTransform(dagPath)
@@ -299,8 +305,11 @@ def setupMannequinUI():
 
     mannequinDockPtr = ui.MQtUtil.findLayout("mannequinPaletteDock")
     mannequinDock = wrapInstance(long(mannequinDockPtr), QWidget)
+    mannequinDock.setMinimumWidth(300)
+
     mannequinLayoutPtr = ui.MQtUtil.findLayout("mannequinPaletteLayout")
     mannequinLayout = wrapInstance(long(mannequinLayoutPtr), QWidget)
+
     mannequinSearchPtr = ui.MQtUtil.findControl("mannequinSearchField")
     mannequinSearch = wrapInstance(long(mannequinSearchPtr), QLineEdit)
 
@@ -308,9 +317,6 @@ def setupMannequinUI():
     file.open(QFile.ReadOnly)
     gui = mannequinToolPanel.loader.load(file, parentWidget=mannequinLayout)
     file.close()
-
-    mannequinDock.setMinimumWidth(300)
-    mannequinToolPanel.reset(mannequinLayout, gui, mannequinSearch)
 
     selList = om.MSelectionList()
     for obj in influenceObjects:
@@ -324,10 +330,15 @@ def setupMannequinUI():
         selList.getDependNode(i, dependNode)
         joints.append((dagPath, dependNode))
 
+    prefixTrim = commonPrefix(joints)
+    mannequinToolPanel.reset(mannequinLayout,
+                             gui,
+                             mannequinSearch,
+                             prefixTrim)
+
     jointDisplays = organizeJoints(joints)
     for jointDisplay in jointDisplays:
         mannequinToolPanel.layoutJointDisplay(jointDisplay)
-
     mannequinToolPanel.finishLayout()
 
 
@@ -495,6 +506,15 @@ def organizeJoints(joints):
         jointColors.append(0)
 
     return zip(jointPairs, jointColors)
+
+
+def commonPrefix(joints):
+    """Determines whether the list of joints has a common prefix.
+    Returns the length of the prefix, or 0 if there is none.
+    """
+    jointNames = [x[0].partialPathName() for x in joints]
+    prefix = os.path.commonprefix(jointNames)
+    return len(prefix)
 
 
 def mannequinSelectionChanged(dagString):
