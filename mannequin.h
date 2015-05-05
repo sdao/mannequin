@@ -49,6 +49,9 @@ private:
   MDagPath _selection;
   MannequinManipulator* _mannequinManip;
   MObject _rotateManip;
+
+  mutable bool _scaleCached;
+  mutable double _scale;
 };
 
 class MannequinContextCommand : public MPxContextCommand

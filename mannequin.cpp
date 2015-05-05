@@ -15,7 +15,9 @@
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MDagPathArray.h>
 
-MannequinContext::MannequinContext() : _maxInfluences(NULL) {}
+MannequinContext::MannequinContext() : _maxInfluences(NULL),
+                                       _scaleCached(false),
+                                       _scale(MANIP_DEFAULT_SCALE) {}
 
 MannequinContext::~MannequinContext() {
   delete[] _maxInfluences;
@@ -173,19 +175,27 @@ bool MannequinContext::intersectRotateManip(MPoint linePoint,
 }
 
 double MannequinContext::manipScale() const {
-  bool optionExists;
-  double scale = MGlobal::optionVarDoubleValue("chartreuseManipScale",
-    &optionExists);
+  if (!_scaleCached) {
+    bool optionExists;
+    double scale = MGlobal::optionVarDoubleValue("chartreuseManipScale",
+      &optionExists);
 
-  if (optionExists) {
-    return scale;
-  } else {
-    return MANIP_DEFAULT_SCALE;
+    if (optionExists) {
+      _scale = scale;
+    } else {
+      _scale = MANIP_DEFAULT_SCALE;
+    }
+    _scaleCached = true;
   }
+
+  return _scale;
 }
 
 void MannequinContext::setManipScale(double scale) {
   MGlobal::setOptionVarValue("chartreuseManipScale", scale);
+
+  _scale = scale;
+  _scaleCached = true;
 
   if (!_rotateManip.isNull()) {
     reselect();
