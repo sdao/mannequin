@@ -2,6 +2,7 @@
 
 #include <maya/MPxManipulatorNode.h>
 #include <maya/MDagPath.h>
+#include <maya/MPoint.h>
 
 class MannequinContext;
 
@@ -21,6 +22,7 @@ public:
   virtual void preDrawUI(const M3dView &view) override;
   virtual void drawUI(MHWRender::MUIDrawManager &drawManager,
     const MHWRender::MFrameContext &frameContext) const override;
+  MPoint drawCenter() const;
 
   static void* creator();
   static MStatus initialize();

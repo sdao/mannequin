@@ -122,8 +122,19 @@ void MannequinManipulator::draw(M3dView &view,
   const MDagPath &path,
   M3dView::DisplayStyle style,
   M3dView::DisplayStatus status) {
-  // Note: since I'm leaving this empty, the manipulator will not render
-  // in the Legacy Viewport.
+  if (!_highlight.hasFn(MFn::kTransform)) {
+    return;
+  }
+
+  MColor green(0.3f, 0.8f, 0.1f);
+  view.beginGL();
+  view.setDrawColor(green);
+
+  MPoint centerPoint = drawCenter();
+  MString text = _highlight.partialPathName();
+  view.drawText(text, centerPoint, M3dView::kCenter);
+
+  view.endGL();
 }
 
 void MannequinManipulator::preDrawUI(const M3dView &view) {}
@@ -134,6 +145,18 @@ void MannequinManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
     return;
   }
 
+  MColor green(0.3f, 0.8f, 0.1f);
+  drawManager.beginDrawable();
+  drawManager.setColor(green);
+
+  MPoint centerPoint = drawCenter();
+  MString text = _highlight.partialPathName();
+  drawManager.text(centerPoint, text, MHWRender::MUIDrawManager::kCenter);
+
+  drawManager.endDrawable();
+}
+
+MPoint MannequinManipulator::drawCenter() const {
   MFnTransform selectionXform(_highlight);
   MPoint pivot = selectionXform.rotatePivot(MSpace::kWorld);
 
@@ -147,10 +170,6 @@ void MannequinManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
       singleChildJoint = child;
     }
   }
-
-  MColor blue(0.3f, 0.8f, 0.1f);
-  drawManager.beginDrawable();
-  drawManager.setColor(blue);
 
   MPoint centerPoint;
   if (numChildJoints == 1) {
@@ -166,10 +185,7 @@ void MannequinManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
     centerPoint = pivot;
   }
 
-  drawManager.text(centerPoint, _highlight.partialPathName(),
-    MHWRender::MUIDrawManager::kCenter);
-
-  drawManager.endDrawable();
+  return centerPoint;
 }
 
 void* MannequinManipulator::creator() {
