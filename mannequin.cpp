@@ -50,7 +50,7 @@ void MannequinContext::select(const MDagPath& dagPath) {
 
     rotateManip.connectToRotationPlug(rotationPlug);
     rotateManip.displayWithNode(_selection.node());
-    rotateManip.setManipScale(MANIP_BASE_SIZE * manipScale());
+    rotateManip.setManipScale(manipScale());
     rotateManip.setRotateMode(MFnRotateManip::kObjectSpace);
     addManipulator(_rotateManip);
   } else {
@@ -163,8 +163,7 @@ bool MannequinContext::intersectRotateManip(MPoint linePoint,
   MPoint selectionPivot = selectionXform.rotatePivot(MSpace::kWorld, &err);
 
   // Extend manipulator radius a bit because of the free-rotation "shell".
-  float manipRadius = MANIP_BASE_SIZE * manipScale()
-    * MFnManip3D::globalSize() * 1.25f;
+  float manipRadius = manipScale() * MFnManip3D::globalSize() * 1.25f;
 
   return Util::raySphereIntersection(linePoint,
     lineDirection,
@@ -181,7 +180,7 @@ double MannequinContext::manipScale() const {
   if (optionExists) {
     return scale;
   } else {
-    return 1.0;
+    return MANIP_DEFAULT_SCALE;
   }
 }
 

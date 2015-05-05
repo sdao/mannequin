@@ -40,7 +40,7 @@ public:
   void updateText();
 
 private:
-  static constexpr float MANIP_BASE_SIZE = 5.0f;
+  static constexpr double MANIP_DEFAULT_SCALE = 5.0;
 
   MDagPath _meshDagPath;
   MObject _skinObject;

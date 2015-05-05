@@ -24,7 +24,8 @@ global proc mannequinContextProperties() {
 
     frameLayout -collapsable false -label "Manipulator";
       floatSliderGrp -label "Size:"
-                     -minValue 0.25 -maxValue 4.0 -value 1.0
+                     -minValue 0.1 -maxValue 20.0 -value 1.0
+                     -fieldMinValue 0.01 -fieldMaxValue 1000.0
                      -changeCommand "mannequinManipSizeChanged"
                      -cw 1 60 -cw 3 120 chartreuseManipSize;
     setParent ..;
@@ -45,7 +46,7 @@ global proc mannequinContextFinish() {
 }
 
 global proc mannequinReset() {
-  floatSliderGrp -e -value 1.0 chartreuseManipSize;
+  floatSliderGrp -e -value 5.0 chartreuseManipSize;
   mannequinManipSizeChanged;
 }
 

@@ -5,21 +5,20 @@
 
 namespace Util {
 
-  bool raySphereIntersection(const MPoint& rayOrigin, // = 8.5, 55.3, 105.6
-    const MVector& rayDirection, // = 0, 0, -1
-    const MPoint& sphereOrigin, // = 8.5, 53.4, 5
-    float sphereRadius, // = 7.5
+  bool raySphereIntersection(const MPoint& rayOrigin,
+    const MVector& rayDirection,
+    const MPoint& sphereOrigin,
+    float sphereRadius,
     float* outDistance) {
-    MVector diff = rayOrigin - sphereOrigin; // 0, 1.9, 100.6
-    MVector l = rayDirection.normal(); // 0, 0, -1
+    MVector diff = rayOrigin - sphereOrigin;
+    MVector l = rayDirection.normal();
 
     // See Wikipedia:
     // <http://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection>
     // Note that in the OpenMaya API, x * y is dot product and x ^ y is cross.
-    float a = l * l; // 1
-    float b = l * diff; // -100.6
+    float a = l * l;
+    float b = l * diff;
     float c = (diff * diff) - (sphereRadius * sphereRadius);
-    // 10 123.97 - 56.25 = 10 067.72
 
     float discriminant = (b * b) - (a * c);
     // 52.64
