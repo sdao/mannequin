@@ -87,7 +87,7 @@ global proc mannequinPaletteBegin() {
 global proc mannequinPaletteFinish() {
   python "tearDownMannequinUI()";
   if (`dockControl -ex mannequinPaletteDock`) {
-    evalDeferred "deleteUI mannequinPaletteDock";
+    deleteUI mannequinPaletteDock;
   }
 }
 
@@ -102,8 +102,14 @@ global proc mannequinInstallShelf() {
 }
 
 global proc mannequinTool() {
+  // Create context if it doesn't exist.
   if (!`mannequinContext -ex globalMannequinContext`) {
     mannequinContext globalMannequinContext;
+  }
+
+  // Do nothing if we're in the context already.
+  if (`currentCtx` == "globalMannequinContext") {
+    return;
   }
 
   setToolTo globalMannequinContext;
