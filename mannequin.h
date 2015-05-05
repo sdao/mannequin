@@ -15,6 +15,7 @@ public:
   ~MannequinContext();
   void forceExit();
   void select(const MDagPath& dagPath);
+  void reselect();
   MDagPath selectionDagPath() const;
   void calculateMaxInfluences(MDagPath meshDagPath, MObject skinObject);
   const unsigned int* maxInfluences() const;
@@ -24,6 +25,8 @@ public:
   bool intersectRotateManip(MPoint linePoint,
     MVector lineDirection,
     float* distanceOut);
+  double manipScale() const;
+  void setManipScale(double scale);
 
   virtual void toolOnSetup(MEvent& event) override;
   virtual void toolOffCleanup() override;
@@ -37,7 +40,7 @@ public:
   void updateText();
 
 private:
-  static constexpr float ROTATE_MANIP_SCALE = 5.0f;
+  static constexpr float MANIP_BASE_SIZE = 5.0f;
 
   MDagPath _meshDagPath;
   MObject _skinObject;

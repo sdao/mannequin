@@ -4,6 +4,12 @@ global proc mannequinContextProperties() {
   string $label = `toolPropertyWindow -q -field`;
   text -e -label "Mannequin Settings" $label;
 
+  string $reset = `toolPropertyWindow -q -resetButton`;
+  button -e -command "mannequinReset" $reset;
+
+  string $help = `toolPropertyWindow -q -helpButton`;
+  button -e -command "mannequinHelp" $help;
+
   string $parent = `toolPropertyWindow -q -location`;
   setParent $parent;
 
@@ -16,11 +22,21 @@ global proc mannequinContextProperties() {
     button -label "Show Mannequin Palette" -command "mannequinPaletteBegin";
     separator -height 10 -style "none";
 
+    frameLayout -collapsable false -label "Manipulator";
+      floatSliderGrp -label "Size:"
+                     -minValue 0.25 -maxValue 4.0 -value 1.0
+                     -changeCommand "mannequinManipSizeChanged"
+                     -cw 1 60 -cw 3 120 chartreuseManipSize;
+    setParent ..;
+
   setUITemplate -popTemplate;
   mannequinPaletteBegin;
 }
 
 global proc mannequinContextValues(string $name) {
+  $ctx = `currentCtx`;
+  $scale = `mannequinContext -q -ms $ctx`;
+  floatSliderGrp -e -value $scale chartreuseManipSize;
   toolPropertySelect mannequinSettingsLayout;
 }
 
@@ -28,11 +44,26 @@ global proc mannequinContextFinish() {
   mannequinPaletteFinish;
 }
 
+global proc mannequinReset() {
+  floatSliderGrp -e -value 1.0 chartreuseManipSize;
+  mannequinManipSizeChanged;
+}
+
+global proc mannequinHelp() {
+  showHelp -a "https://github.com/sdao/mannnequin";
+}
+
+global proc mannequinManipSizeChanged() {
+  $scale = `floatSliderGrp -q -value chartreuseManipSize`;
+  $ctx = `currentCtx`;
+  mannequinContext -e -ms $scale $ctx;
+}
+
 global proc mannequinPaletteBegin() {
   if (!`dockControl -ex mannequinPaletteDock`) {
     window mannequinPaletteWindow;
     menuBarLayout;
-      textField mannequinSearchField;
+      textField -placeholderText "Type to search" mannequinSearchField;
       separator -height 5 -style "none";
     setParent ..;
     scrollLayout -childResizable true;

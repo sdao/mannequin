@@ -50,7 +50,7 @@ void MannequinContext::select(const MDagPath& dagPath) {
 
     rotateManip.connectToRotationPlug(rotationPlug);
     rotateManip.displayWithNode(_selection.node());
-    rotateManip.setManipScale(ROTATE_MANIP_SCALE);
+    rotateManip.setManipScale(MANIP_BASE_SIZE * manipScale());
     rotateManip.setRotateMode(MFnRotateManip::kObjectSpace);
     addManipulator(_rotateManip);
   } else {
@@ -63,6 +63,14 @@ void MannequinContext::select(const MDagPath& dagPath) {
   MGlobal::executePythonCommand(pythonSelectionCallback);
 
   updateText();
+}
+
+void MannequinContext::reselect() {
+  MDagPath oldSelection = _selection;
+  if (oldSelection.isValid()) {
+    select(MDagPath());
+    select(oldSelection);
+  }
 }
 
 MDagPath MannequinContext::selectionDagPath() const {
@@ -155,13 +163,34 @@ bool MannequinContext::intersectRotateManip(MPoint linePoint,
   MPoint selectionPivot = selectionXform.rotatePivot(MSpace::kWorld, &err);
 
   // Extend manipulator radius a bit because of the free-rotation "shell".
-  float manipRadius = ROTATE_MANIP_SCALE * MFnManip3D::globalSize() * 1.25f;
+  float manipRadius = MANIP_BASE_SIZE * manipScale()
+    * MFnManip3D::globalSize() * 1.25f;
 
   return Util::raySphereIntersection(linePoint,
     lineDirection,
     selectionPivot,
     manipRadius,
     distanceOut);
+}
+
+double MannequinContext::manipScale() const {
+  bool optionExists;
+  double scale = MGlobal::optionVarDoubleValue("chartreuseManipScale",
+    &optionExists);
+
+  if (optionExists) {
+    return scale;
+  } else {
+    return 1.0;
+  }
+}
+
+void MannequinContext::setManipScale(double scale) {
+  MGlobal::setOptionVarValue("chartreuseManipScale", scale);
+
+  if (!_rotateManip.isNull()) {
+    reselect();
+  }
 }
 
 void MannequinContext::toolOnSetup(MEvent& event) {
@@ -333,6 +362,10 @@ MStatus MannequinContextCommand::doEditFlags() {
     MString errMessage;
     errMessage.format("Couldn't find and select ^1s", arg);
     MGlobal::displayWarning(errMessage);
+  } else if (parse.isFlagSet("-ms")) {
+    double arg = parse.flagArgumentDouble("-ms", 0);
+    _mannequinContext->setManipScale(arg);
+    return MS::kSuccess;
   }
 
   return MS::kSuccess;
@@ -375,6 +408,9 @@ MStatus MannequinContextCommand::doQueryFlags() {
     }
 
     setResult(result);
+  } else if (parse.isFlagSet("-ms")) {
+    double result = _mannequinContext->manipScale();
+    setResult(result);
   }
 
   return MS::kSuccess;
@@ -385,6 +421,7 @@ MStatus MannequinContextCommand::appendSyntax() {
 
   syn.addFlag("-io", "-influenceObjects");
   syn.addFlag("-sel", "-selection", MSyntax::kString);
+  syn.addFlag("-ms", "-manipSize", MSyntax::kDouble);
 
   return MS::kSuccess;
 }
