@@ -18,6 +18,7 @@ public:
   void reselect();
   MDagPath selectionDagPath() const;
   void calculateMaxInfluences(MDagPath meshDagPath, MObject skinObject);
+  void calculateLongestJoint(MObject skinObject);
   const unsigned int* maxInfluences() const;
   MDagPath meshDagPath() const;
   MObject skinObject() const;
@@ -27,6 +28,7 @@ public:
     float* distanceOut);
   double manipScale() const;
   void setManipScale(double scale);
+  double manipAdjustedScale() const;
 
   virtual void toolOnSetup(MEvent& event) override;
   virtual void toolOffCleanup() override;
@@ -40,7 +42,8 @@ public:
   void updateText();
 
 private:
-  static constexpr double MANIP_DEFAULT_SCALE = 5.0;
+  static constexpr double MANIP_DEFAULT_SCALE = 1.0;
+  static constexpr double MANIP_ADJUSTMENT = 0.1;
 
   MDagPath _meshDagPath;
   MObject _skinObject;
@@ -52,6 +55,7 @@ private:
 
   mutable bool _scaleCached;
   mutable double _scale;
+  double _longestJoint;
 };
 
 class MannequinContextCommand : public MPxContextCommand

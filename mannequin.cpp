@@ -52,7 +52,7 @@ void MannequinContext::select(const MDagPath& dagPath) {
 
     rotateManip.connectToRotationPlug(rotationPlug);
     rotateManip.displayWithNode(_selection.node());
-    rotateManip.setManipScale(manipScale());
+    rotateManip.setManipScale(manipAdjustedScale());
     rotateManip.setRotateMode(MFnRotateManip::kObjectSpace);
     addManipulator(_rotateManip);
   } else {
@@ -126,6 +126,23 @@ void MannequinContext::calculateMaxInfluences(MDagPath dagPath,
   }
 }
 
+void MannequinContext::calculateLongestJoint(MObject skinObj) {
+  MFnSkinCluster skin(skinObj);
+
+  MDagPathArray influenceObjects;
+  int numInfluences = skin.influenceObjects(influenceObjects);
+
+  double maxLength = 0.0;
+  for (int i = 0; i < numInfluences; ++i) {
+    MDagPath influence = influenceObjects[i];
+    MFnTransform xform(influence);
+    MVector translation = xform.getTranslation(MSpace::kObject);
+    maxLength = std::max(maxLength, translation.length());
+  }
+
+  _longestJoint = maxLength;
+}
+
 const unsigned int* MannequinContext::maxInfluences() const {
   return _maxInfluences;
 }
@@ -165,7 +182,7 @@ bool MannequinContext::intersectRotateManip(MPoint linePoint,
   MPoint selectionPivot = selectionXform.rotatePivot(MSpace::kWorld, &err);
 
   // Extend manipulator radius a bit because of the free-rotation "shell".
-  float manipRadius = manipScale() * MFnManip3D::globalSize() * 1.25f;
+  float manipRadius = manipAdjustedScale() * MFnManip3D::globalSize() * 1.25f;
 
   return Util::raySphereIntersection(linePoint,
     lineDirection,
@@ -200,6 +217,10 @@ void MannequinContext::setManipScale(double scale) {
   if (!_rotateManip.isNull()) {
     reselect();
   }
+}
+
+double MannequinContext::manipAdjustedScale() const {
+  return manipScale() * MANIP_ADJUSTMENT * _longestJoint;
 }
 
 void MannequinContext::toolOnSetup(MEvent& event) {
@@ -254,6 +275,9 @@ void MannequinContext::toolOnSetup(MEvent& event) {
 
   // Calculate the max influences for each face.
   calculateMaxInfluences(dagPath, skinObj);
+
+  // Determine the longest joint length in the rig.
+  calculateLongestJoint(skinObj);
 
   // Finally add the manipulator.
   bool didAdd = addMannequinManipulator();
