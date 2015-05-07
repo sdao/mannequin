@@ -22,9 +22,14 @@ global proc mannequinContextProperties() {
     button -label "Show Mannequin Palette" -command "mannequinPaletteBegin";
     separator -height 10 -style "none";
 
-    frameLayout -collapsable false -label "Manipulator";
+    frameLayout -collapsable false -label "Manipulators";
+      checkBoxGrp -label "Adjust:"
+                  -label1 "Make shorter joints have smaller manipulators"
+                  -changeCommand "mannequinManipAdjustChanged"
+                  -cw 1 60
+                  chartreuseManipAutoAdjust;
       floatSliderGrp -label "Size:"
-                     -minValue 0.1 -maxValue 10.0 -value 1.0
+                     -minValue 0.1 -maxValue 10.0 -value 1.5
                      -fieldMinValue 0.01 -fieldMaxValue 100.0
                      -changeCommand "mannequinManipSizeChanged"
                      -cw 1 60 -cw 3 120 chartreuseManipSize;
@@ -36,8 +41,13 @@ global proc mannequinContextProperties() {
 
 global proc mannequinContextValues(string $name) {
   $ctx = `currentCtx`;
+
   $scale = `mannequinContext -q -ms $ctx`;
   floatSliderGrp -e -value $scale chartreuseManipSize;
+
+  $adjust = `mannequinContext -q -ma $ctx`;
+  checkBoxGrp -e -value1 $adjust chartreuseManipAutoAdjust;
+
   toolPropertySelect mannequinSettingsLayout;
 }
 
@@ -46,12 +56,20 @@ global proc mannequinContextFinish() {
 }
 
 global proc mannequinReset() {
-  floatSliderGrp -e -value 1.0 chartreuseManipSize;
+  checkBoxGrp -e -value1 false chartreuseManipAutoAdjust;
+  mannequinManipAdjustChanged;
+  floatSliderGrp -e -value 1.5 chartreuseManipSize;
   mannequinManipSizeChanged;
 }
 
 global proc mannequinHelp() {
   showHelp -a "https://github.com/sdao/mannnequin";
+}
+
+global proc mannequinManipAdjustChanged() {
+  $adjust = `checkBoxGrp -q -value1 chartreuseManipAutoAdjust`;
+  $ctx = `currentCtx`;
+  mannequinContext -e -ma $adjust $ctx;
 }
 
 global proc mannequinManipSizeChanged() {

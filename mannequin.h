@@ -6,6 +6,7 @@
 #include <maya/MDagPath.h>
 #include <maya/MPoint.h>
 #include <maya/MVector.h>
+#include <boost/optional.hpp>
 
 class MannequinManipulator;
 
@@ -19,6 +20,7 @@ public:
   MDagPath selectionDagPath() const;
   void calculateMaxInfluences(MDagPath meshDagPath, MObject skinObject);
   void calculateLongestJoint(MObject skinObject);
+  void calculateJointLengthRatio(MDagPath jointDagPath);
   const unsigned int* maxInfluences() const;
   MDagPath meshDagPath() const;
   MObject skinObject() const;
@@ -28,6 +30,8 @@ public:
     float* distanceOut);
   double manipScale() const;
   void setManipScale(double scale);
+  bool manipAutoAdjust() const;
+  void setManipAutoAdjust(bool autoAdjust);
   double manipAdjustedScale() const;
 
   virtual void toolOnSetup(MEvent& event) override;
@@ -42,7 +46,7 @@ public:
   void updateText();
 
 private:
-  static constexpr double MANIP_DEFAULT_SCALE = 1.0;
+  static constexpr double MANIP_DEFAULT_SCALE = 1.5;
   static constexpr double MANIP_ADJUSTMENT = 0.1;
 
   MDagPath _meshDagPath;
@@ -53,9 +57,10 @@ private:
   MannequinManipulator* _mannequinManip;
   MObject _rotateManip;
 
-  mutable bool _scaleCached;
-  mutable double _scale;
+  mutable boost::optional<double> _scale;
+  mutable boost::optional<double> _autoAdjust;
   double _longestJoint;
+  double _jointLengthRatio;
 };
 
 class MannequinContextCommand : public MPxContextCommand

@@ -15,9 +15,10 @@
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MDagPathArray.h>
 
-MannequinContext::MannequinContext() : _maxInfluences(NULL),
-                                       _scaleCached(false),
-                                       _scale(MANIP_DEFAULT_SCALE) {}
+constexpr double MannequinContext::MANIP_DEFAULT_SCALE;
+constexpr double MannequinContext::MANIP_ADJUSTMENT;
+
+MannequinContext::MannequinContext() : _maxInfluences(NULL) {}
 
 MannequinContext::~MannequinContext() {
   delete[] _maxInfluences;
@@ -49,6 +50,7 @@ void MannequinContext::select(const MDagPath& dagPath) {
 
     MFnTransform selectionXform(_selection);
     MPlug rotationPlug = selectionXform.findPlug("rotate");
+    calculateJointLengthRatio(_selection);
 
     rotateManip.connectToRotationPlug(rotationPlug);
     rotateManip.displayWithNode(_selection.node());
@@ -134,13 +136,50 @@ void MannequinContext::calculateLongestJoint(MObject skinObj) {
 
   double maxLength = 0.0;
   for (int i = 0; i < numInfluences; ++i) {
-    MDagPath influence = influenceObjects[i];
-    MFnTransform xform(influence);
-    MVector translation = xform.getTranslation(MSpace::kObject);
-    maxLength = std::max(maxLength, translation.length());
+    MDagPath jointDagPath = influenceObjects[i];
+    unsigned int children = jointDagPath.childCount();
+
+    // We're looking through the children instead of at the actual joint
+    // because we want to avoid the root transform. We end up looking at the
+    // same number of objects since a transform can have only one parent.
+    for (int i = 0; i < children; ++i) {
+      MObject child = jointDagPath.child(i);
+      if (child.hasFn(MFn::kJoint)) {
+        MFnDagNode dagNode(child);
+        MDagPath childDagPath;
+        dagNode.getPath(childDagPath);
+        MFnTransform childXform(childDagPath);
+        maxLength = std::max(maxLength,
+          childXform.getTranslation(MSpace::kObject).length());
+      }
+    }
   }
 
   _longestJoint = maxLength;
+}
+
+void MannequinContext::calculateJointLengthRatio(MDagPath jointDagPath) {
+  if (_autoAdjust && _autoAdjust.value()) {
+    unsigned int children = jointDagPath.childCount();
+    double maxLength = 0.0;
+
+    for (int i = 0; i < children; ++i) {
+      MObject child = jointDagPath.child(i);
+      if (child.hasFn(MFn::kJoint)) {
+        MFnDagNode dagNode(child);
+        MDagPath childDagPath;
+        dagNode.getPath(childDagPath);
+        MFnTransform childXform(childDagPath);
+        maxLength = std::max(maxLength,
+          childXform.getTranslation(MSpace::kObject).length());
+      }
+    }
+
+    double rawRatio = maxLength / _longestJoint;
+    _jointLengthRatio = rawRatio * 0.75 + 0.25; // Scale to [1/4, 1].
+  } else {
+    _jointLengthRatio = 1.0;
+  }
 }
 
 const unsigned int* MannequinContext::maxInfluences() const {
@@ -192,7 +231,7 @@ bool MannequinContext::intersectRotateManip(MPoint linePoint,
 }
 
 double MannequinContext::manipScale() const {
-  if (!_scaleCached) {
+  if (!_scale) {
     bool optionExists;
     double scale = MGlobal::optionVarDoubleValue("chartreuseManipScale",
       &optionExists);
@@ -202,17 +241,42 @@ double MannequinContext::manipScale() const {
     } else {
       _scale = MANIP_DEFAULT_SCALE;
     }
-    _scaleCached = true;
   }
 
-  return _scale;
+  return _scale.value();
 }
 
 void MannequinContext::setManipScale(double scale) {
   MGlobal::setOptionVarValue("chartreuseManipScale", scale);
 
   _scale = scale;
-  _scaleCached = true;
+
+  if (!_rotateManip.isNull()) {
+    reselect();
+  }
+}
+
+bool MannequinContext::manipAutoAdjust() const {
+  if (!_autoAdjust) {
+    bool optionExists;
+    bool autoAdjust = MGlobal::optionVarIntValue("chartreuseManipAutoAdjust",
+      &optionExists) > 0;
+
+    if (optionExists) {
+      _autoAdjust = autoAdjust;
+    } else {
+      _autoAdjust = false;
+    }
+  }
+
+  return _autoAdjust.value();
+}
+
+void MannequinContext::setManipAutoAdjust(bool autoAdjust) {
+  MGlobal::setOptionVarValue("chartreuseManipAutoAdjust",
+    autoAdjust ? 1 : 0);
+
+  _autoAdjust = autoAdjust;
 
   if (!_rotateManip.isNull()) {
     reselect();
@@ -220,7 +284,7 @@ void MannequinContext::setManipScale(double scale) {
 }
 
 double MannequinContext::manipAdjustedScale() const {
-  return manipScale() * MANIP_ADJUSTMENT * _longestJoint;
+  return manipScale() * MANIP_ADJUSTMENT * _longestJoint * _jointLengthRatio;
 }
 
 void MannequinContext::toolOnSetup(MEvent& event) {
@@ -371,9 +435,12 @@ MStatus MannequinContextCommand::doEditFlags() {
   if (parse.isFlagSet("-io")) {
     return MS::kInvalidParameter;
   } else if (parse.isFlagSet("-sel")) {
-    MString arg = parse.flagArgumentString("-sel", 0);
-
     MStatus err;
+    MString arg = parse.flagArgumentString("-sel", 0, &err);
+    if (err.error()) {
+      return err;
+    }
+
     MFnSkinCluster skin(_mannequinContext->skinObject(), &err);
     if (err.error()) {
       return err;
@@ -396,8 +463,22 @@ MStatus MannequinContextCommand::doEditFlags() {
     errMessage.format("Couldn't find and select ^1s", arg);
     MGlobal::displayWarning(errMessage);
   } else if (parse.isFlagSet("-ms")) {
-    double arg = parse.flagArgumentDouble("-ms", 0);
+    MStatus err;
+    double arg = parse.flagArgumentDouble("-ms", 0, &err);
+    if (err.error()) {
+      return err;
+    }
+
     _mannequinContext->setManipScale(arg);
+    return MS::kSuccess;
+  } else if (parse.isFlagSet("-ma")) {
+    MStatus err;
+    bool arg = parse.flagArgumentBool("-ma", 0, &err);
+    if (err.error()) {
+      return err;
+    }
+
+    _mannequinContext->setManipAutoAdjust(arg);
     return MS::kSuccess;
   }
 
@@ -444,6 +525,9 @@ MStatus MannequinContextCommand::doQueryFlags() {
   } else if (parse.isFlagSet("-ms")) {
     double result = _mannequinContext->manipScale();
     setResult(result);
+  } else if (parse.isFlagSet("-ma")) {
+    bool result = _mannequinContext->manipAutoAdjust();
+    setResult(result);
   }
 
   return MS::kSuccess;
@@ -455,6 +539,7 @@ MStatus MannequinContextCommand::appendSyntax() {
   syn.addFlag("-io", "-influenceObjects");
   syn.addFlag("-sel", "-selection", MSyntax::kString);
   syn.addFlag("-ms", "-manipSize", MSyntax::kDouble);
+  syn.addFlag("-ma", "-manipAdjust", MSyntax::kDouble);
 
   return MS::kSuccess;
 }
