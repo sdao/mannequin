@@ -77,6 +77,17 @@ MDagPath MannequinContext::selectionDagPath() const {
   return _selection;
 }
 
+void MannequinContext::calculateDagIndexLookup(MObject skinObj) {
+  MFnSkinCluster skin(skinObj);
+  MDagPathArray influenceObjects;
+  unsigned int numInfluences = skin.influenceObjects(influenceObjects);
+
+  for (int i = 0; i < numInfluences; ++i) {
+    std::string key(influenceObjects[i].fullPathName().asChar());
+    _dagIndexLookup[key] = i;
+  }
+}
+
 void MannequinContext::calculateMaxInfluences(MDagPath dagPath,
   MObject skinObj) {
   MFnMesh mesh(dagPath);
@@ -278,6 +289,16 @@ double MannequinContext::manipAdjustedScale() const {
   return manipScale() * MANIP_ADJUSTMENT * _longestJoint * _jointLengthRatio;
 }
 
+int MannequinContext::influenceIndexForMeshDagPath(MDagPath dagPath) {
+  std::string key(dagPath.fullPathName().asChar());
+  auto value = _dagIndexLookup.find(key);
+  if (value != _dagIndexLookup.end()) {
+    return value->second;
+  }
+
+  return -1;
+}
+
 void MannequinContext::toolOnSetup(MEvent& event) {
   MSelectionList list;
   MGlobal::getActiveSelectionList(list);
@@ -328,6 +349,9 @@ void MannequinContext::toolOnSetup(MEvent& event) {
     return;
   }
 
+  // Add DAG paths to lookup table.
+  calculateDagIndexLookup(skinObj);
+
   // Calculate the max influences for each face.
   calculateMaxInfluences(dagPath, skinObj);
 
@@ -357,6 +381,8 @@ void MannequinContext::toolOffCleanup() {
 
   _mannequinManip = NULL;
   _rotateManip = MObject::kNullObj;
+  _maxInfluences.clear();
+  _dagIndexLookup.clear();
 
   deleteManipulators();
   MGlobal::clearSelectionList();

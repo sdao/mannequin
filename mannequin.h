@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <string>
+#include <map>
 
 #include <maya/MPxContext.h>
 #include <maya/MPxContextCommand.h>
@@ -19,6 +21,7 @@ public:
   void select(const MDagPath& dagPath);
   void reselect();
   MDagPath selectionDagPath() const;
+  void calculateDagIndexLookup(MObject skinObj);
   void calculateMaxInfluences(MDagPath meshDagPath, MObject skinObject);
   void calculateLongestJoint(MObject skinObject);
   void calculateJointLengthRatio(MDagPath jointDagPath);
@@ -34,6 +37,7 @@ public:
   bool manipAutoAdjust() const;
   void setManipAutoAdjust(bool autoAdjust);
   double manipAdjustedScale() const;
+  int influenceIndexForMeshDagPath(MDagPath dagPath);
 
   virtual void toolOnSetup(MEvent& event) override;
   virtual void toolOffCleanup() override;
@@ -53,6 +57,7 @@ private:
   MDagPath _meshDagPath;
   MObject _skinObject;
   std::vector<int> _maxInfluences;
+  std::map<std::string, int> _dagIndexLookup;
 
   MDagPath _selection;
   MannequinManipulator* _mannequinManip;
