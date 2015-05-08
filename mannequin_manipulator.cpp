@@ -68,8 +68,9 @@ MStatus MannequinManipulator::doMove(M3dView& view, bool& refresh) {
   }
 
   // Select all related faces.
-  const unsigned int* maxInfluences = _ctx->maxInfluences();
-  if (!maxInfluences) {
+  int numPolygons = mesh.numPolygons();
+  const std::vector<int>& maxInfluences = _ctx->maxInfluences();
+  if (maxInfluences.size() != numPolygons) {
     return doMoveError(refresh);
   }
 
@@ -77,7 +78,6 @@ MStatus MannequinManipulator::doMove(M3dView& view, bool& refresh) {
   MObject compObj = comp.create(MFn::kMeshPolygonComponent);
 
   unsigned int hitFaceInfluence = maxInfluences[hitFace];
-  int numPolygons = mesh.numPolygons();
   for (int i = 0; i < numPolygons; ++i) {
     if (maxInfluences[i] == hitFaceInfluence) {
       comp.addElement(i);

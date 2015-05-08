@@ -18,11 +18,7 @@
 constexpr double MannequinContext::MANIP_DEFAULT_SCALE;
 constexpr double MannequinContext::MANIP_ADJUSTMENT;
 
-MannequinContext::MannequinContext() : _maxInfluences(NULL) {}
-
-MannequinContext::~MannequinContext() {
-  delete[] _maxInfluences;
-}
+MannequinContext::MannequinContext() {}
 
 void MannequinContext::forceExit() {
   MGlobal::executeCommand("setToolTo $gSelect");
@@ -87,8 +83,7 @@ void MannequinContext::calculateMaxInfluences(MDagPath dagPath,
   MFnSkinCluster skin(skinObj);
 
   int numPolygons = mesh.numPolygons();
-  delete[] _maxInfluences;
-  _maxInfluences = new unsigned int[numPolygons];
+  _maxInfluences.resize(numPolygons);
 
   for (int i = 0; i < numPolygons; ++i) {
     MIntArray polyVertices;
@@ -103,10 +98,7 @@ void MannequinContext::calculateMaxInfluences(MDagPath dagPath,
     skin.getWeights(dagPath, compObj, weights, numInfluences);
 
     int count = 0;
-    double* weightSums = new double[numInfluences];
-    for (int influence = 0; influence < numInfluences; ++influence) {
-      weightSums[influence] = 0.0f;
-    }
+    std::vector<double> weightSums(numInfluences, 0.0f);
     for (int vtx = 0; vtx < polyVertices.length(); ++vtx) {
       for (int influence = 0; influence < numInfluences; ++influence) {
         weightSums[influence] += weights[count];
@@ -123,7 +115,6 @@ void MannequinContext::calculateMaxInfluences(MDagPath dagPath,
       }
     }
 
-    delete[] weightSums;
     _maxInfluences[i] = maxIndex;
   }
 }
@@ -182,7 +173,7 @@ void MannequinContext::calculateJointLengthRatio(MDagPath jointDagPath) {
   }
 }
 
-const unsigned int* MannequinContext::maxInfluences() const {
+const std::vector<int>& MannequinContext::maxInfluences() const {
   return _maxInfluences;
 }
 

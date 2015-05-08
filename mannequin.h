@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <maya/MPxContext.h>
 #include <maya/MPxContextCommand.h>
 #include <maya/MEvent.h>
@@ -13,7 +15,6 @@ class MannequinManipulator;
 class MannequinContext : public MPxContext {
 public:
   MannequinContext();
-  ~MannequinContext();
   void forceExit();
   void select(const MDagPath& dagPath);
   void reselect();
@@ -21,7 +22,7 @@ public:
   void calculateMaxInfluences(MDagPath meshDagPath, MObject skinObject);
   void calculateLongestJoint(MObject skinObject);
   void calculateJointLengthRatio(MDagPath jointDagPath);
-  const unsigned int* maxInfluences() const;
+  const std::vector<int>& maxInfluences() const;
   MDagPath meshDagPath() const;
   MObject skinObject() const;
   bool addMannequinManipulator(MDagPath newHighlight = MDagPath());
@@ -51,7 +52,7 @@ private:
 
   MDagPath _meshDagPath;
   MObject _skinObject;
-  unsigned int* _maxInfluences;
+  std::vector<int> _maxInfluences;
 
   MDagPath _selection;
   MannequinManipulator* _mannequinManip;
