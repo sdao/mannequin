@@ -83,8 +83,7 @@ void MannequinContext::calculateDagIndexLookup(MObject skinObj) {
   unsigned int numInfluences = skin.influenceObjects(influenceObjects);
 
   for (int i = 0; i < numInfluences; ++i) {
-    std::string key(influenceObjects[i].fullPathName().asChar());
-    _dagIndexLookup[key] = i;
+    _dagIndexLookup[influenceObjects[i]] = i;
   }
 }
 
@@ -290,8 +289,7 @@ double MannequinContext::manipAdjustedScale() const {
 }
 
 int MannequinContext::influenceIndexForMeshDagPath(MDagPath dagPath) {
-  std::string key(dagPath.fullPathName().asChar());
-  auto value = _dagIndexLookup.find(key);
+  auto value = _dagIndexLookup.find(dagPath);
   if (value != _dagIndexLookup.end()) {
     return value->second;
   }

@@ -12,6 +12,8 @@
 #include <maya/MVector.h>
 #include <boost/optional.hpp>
 
+#include "stdext.h"
+
 class MannequinManipulator;
 
 class MannequinContext : public MPxContext {
@@ -57,7 +59,7 @@ private:
   MDagPath _meshDagPath;
   MObject _skinObject;
   std::vector<int> _maxInfluences;
-  std::map<std::string, int> _dagIndexLookup;
+  std::map<MDagPath, int> _dagIndexLookup;
 
   MDagPath _selection;
   MannequinManipulator* _mannequinManip;

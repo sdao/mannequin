@@ -10,11 +10,11 @@ class MannequinManipulator : public MPxManipulatorNode {
 public:
   MannequinManipulator();
   void setup(MannequinContext* ctx, MDagPath newHighlight = MDagPath());
+  bool highlight(MDagPath dagPath = MDagPath(), bool force = false);
   MDagPath highlightedDagPath() const;
 
   virtual void postConstructor() override;
   virtual MStatus doMove(M3dView& view, bool& refresh) override;
-  MStatus doMoveError(bool& refresh);
   virtual void draw(M3dView &view,
     const MDagPath &path,
     M3dView::DisplayStyle style,

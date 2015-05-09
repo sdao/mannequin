@@ -20,7 +20,50 @@ MannequinManipulator::MannequinManipulator() : _ctx(NULL) {}
 void MannequinManipulator::setup(MannequinContext* ctx,
   MDagPath newHighlight) {
   _ctx = ctx;
-  _highlight = newHighlight;
+  highlight(newHighlight, true);
+}
+
+bool MannequinManipulator::highlight(MDagPath dagPath, bool force) {
+  if (!force && dagPath == _highlight) {
+    // Maintain the status quo if not forced!
+    return false;
+  }
+
+  do {
+    if (!_ctx) {
+      break;
+    }
+
+    MFnMesh mesh(_ctx->meshDagPath());
+    int numPolygons = mesh.numPolygons();
+    const std::vector<int>& maxInfluences = _ctx->maxInfluences();
+    if (maxInfluences.size() != numPolygons) {
+      break;
+    }
+
+    MFnSingleIndexedComponent comp;
+    MObject compObj = comp.create(MFn::kMeshPolygonComponent);
+
+    int highlightIndex = _ctx->influenceIndexForMeshDagPath(dagPath);
+    int selectionIndex = _ctx->influenceIndexForMeshDagPath(
+      _ctx->selectionDagPath());
+
+    for (int i = 0; i < numPolygons; ++i) {
+      if (maxInfluences[i] == highlightIndex ||
+          maxInfluences[i] == selectionIndex) {
+        comp.addElement(i);
+      }
+    }
+
+    _highlight = dagPath;
+    MGlobal::select(_ctx->meshDagPath(), compObj, MGlobal::kReplaceList);
+    return true;
+  } while (false);
+
+error:
+  _highlight = MDagPath();
+  MGlobal::clearSelectionList();
+  return true;
 }
 
 MDagPath MannequinManipulator::highlightedDagPath() const {
@@ -40,81 +83,52 @@ MStatus MannequinManipulator::doMove(M3dView& view, bool& refresh) {
   MVector lineDirection;
   mouseRayWorld(linePoint, lineDirection);
 
-  if (!_ctx) {
-    return doMoveError(refresh);
-  }
-
-  MFnMesh mesh(_ctx->meshDagPath());
-  MFnSkinCluster skin(_ctx->skinObject());
-
-  MFloatPoint worldLinePoint;
-  worldLinePoint.setCast(linePoint);
-
-  MFloatPoint hitPoint;
-  int hitFace;
-  bool hit = mesh.closestIntersection(worldLinePoint, lineDirection,
-    NULL, NULL, false, MSpace::kWorld, 1000.0f, false, NULL, hitPoint, NULL,
-    &hitFace, NULL, NULL, NULL, 1e-3);
-
-  if (!hit) {
-    return doMoveError(refresh);
-  }
-
-  bool hitRotateManip = _ctx->intersectRotateManip(linePoint, lineDirection,
-    NULL);
-  if (hitRotateManip) {
-    // We're pointing at the rotation manipulator.
-    return doMoveError(refresh);
-  }
-
-  // Select all related faces.
-  int numPolygons = mesh.numPolygons();
-  const std::vector<int>& maxInfluences = _ctx->maxInfluences();
-  if (maxInfluences.size() != numPolygons) {
-    return doMoveError(refresh);
-  }
-
-  MFnSingleIndexedComponent comp;
-  MObject compObj = comp.create(MFn::kMeshPolygonComponent);
-
-  unsigned int hitFaceInfluence = maxInfluences[hitFace];
-  for (int i = 0; i < numPolygons; ++i) {
-    if (maxInfluences[i] == hitFaceInfluence) {
-      comp.addElement(i);
-    }
-  }
-
-  // Finish up!
-  MDagPathArray influenceObjects;
-  skin.influenceObjects(influenceObjects);
-  if (!(_highlight == influenceObjects[hitFaceInfluence])) {
-    // Only update if something's changed!
-    MGlobal::select(_ctx->meshDagPath(), compObj, MGlobal::kReplaceList);
-
-    _highlight = influenceObjects[hitFaceInfluence];
-    refresh = true;
-  }
-
-  return MS::kSuccess;
-}
-
-MStatus MannequinManipulator::doMoveError(bool& refresh) {
-  if (_highlight.isValid()) {
-    // Highlight was valid, so we need to clear it now.
-    _highlight = MDagPath();
-
-    // We also need to select the current joint selection, if any.
-    MDagPath parentSelection = _ctx->selectionDagPath();
-    if (parentSelection.isValid()) {
-      MGlobal::select(parentSelection, MObject::kNullObj,
-        MGlobal::kReplaceList);
-    } else {
-      MGlobal::clearSelectionList();
+  do {
+    if (!_ctx) {
+      break;
     }
 
-    refresh = true;
-  }
+    MFnMesh mesh(_ctx->meshDagPath());
+    MFnSkinCluster skin(_ctx->skinObject());
 
+    MFloatPoint worldLinePoint;
+    worldLinePoint.setCast(linePoint);
+
+    MFloatPoint hitPoint;
+    int hitFace;
+    bool hit = mesh.closestIntersection(worldLinePoint, lineDirection,
+      NULL, NULL, false, MSpace::kWorld, 1000.0f, false, NULL, hitPoint, NULL,
+      &hitFace, NULL, NULL, NULL, 1e-3);
+
+    if (!hit) {
+      break;
+    }
+
+    bool hitRotateManip = _ctx->intersectRotateManip(linePoint, lineDirection,
+      NULL);
+    if (hitRotateManip) {
+      // We're pointing at the rotation manipulator.
+      break;
+    }
+
+    // Figure out the joint we've landed on.
+    int numPolygons = mesh.numPolygons();
+    const std::vector<int>& maxInfluences = _ctx->maxInfluences();
+    if (maxInfluences.size() != numPolygons) {
+      break;
+    }
+
+    MDagPathArray influenceObjects;
+    skin.influenceObjects(influenceObjects);
+    unsigned int hitFaceInfluence = maxInfluences[hitFace];
+    MDagPath influenceDagPath = influenceObjects[hitFaceInfluence];
+
+    refresh = highlight(influenceDagPath);
+    return MS::kSuccess;
+  } while (false);
+
+error:
+  refresh = highlight();
   return MS::kUnknownParameter;
 }
 
