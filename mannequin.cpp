@@ -301,48 +301,66 @@ void MannequinContext::toolOnSetup(MEvent& event) {
   MSelectionList list;
   MGlobal::getActiveSelectionList(list);
 
-  if (list.length() == 0) {
-    MGlobal::displayError("Nothing selected");
-    forceExit();
-    return;
-  }
-
   MDagPath dagPath;
-  list.getDagPath(0, dagPath);
-  dagPath.extendToShape();
+  MObject skinObj;
 
-  if (!dagPath.hasFn(MFn::kMesh)) {
-    MGlobal::displayError("Selection is not a mesh");
-    forceExit();
-    return;
+  // Verify whether the previous mesh and skin object are still valid.
+  if (_meshDagPath.isValid() && !_skinObject.isNull()) {
+    bool hasMesh = _meshDagPath.hasFn(MFn::kMesh);
+    MStatus err;
+    MFnSkinCluster skinCluster(_skinObject, &err);
+    bool hasSkin = !err.error();
+
+    if (hasMesh && hasSkin) {
+      dagPath = _meshDagPath;
+      skinObj = _skinObject;
+    }
   }
 
-  MFnMesh mesh(dagPath);
-  MItDependencyNodes depNodeIter(MFn::kSkinClusterFilter);
-  bool hasSkinCluster = false;
-  MObject skinObj;
-  for(; !depNodeIter.isDone() && !hasSkinCluster; depNodeIter.next()) {
-    MObject node = depNodeIter.item();
-    MStatus err;
-    MFnSkinCluster skinCluster(node, &err);
-    if (err.error()) {
-      continue;
+  // If there's a current selection, try to edit that instead.
+  if (list.length() != 0) {
+    list.getDagPath(0, dagPath);
+    dagPath.extendToShape();
+
+    if (!dagPath.hasFn(MFn::kMesh)) {
+      MGlobal::displayError("Selection is not a mesh");
+      forceExit();
+      return;
     }
 
-    unsigned int numGeoms = skinCluster.numOutputConnections();
-    for (unsigned int i = 0; i < numGeoms && !hasSkinCluster; ++i) {
-      unsigned int index = skinCluster.indexForOutputConnection(i);
-      MObject output = skinCluster.outputShapeAtIndex(index);
-      if(output == mesh.object())
-      {
-        hasSkinCluster = true;
-        skinObj = node;
+    MFnMesh mesh(dagPath);
+    MItDependencyNodes depNodeIter(MFn::kSkinClusterFilter);
+    bool hasSkinCluster = false;
+    for(; !depNodeIter.isDone() && !hasSkinCluster; depNodeIter.next()) {
+      MObject node = depNodeIter.item();
+      MStatus err;
+      MFnSkinCluster skinCluster(node, &err);
+      if (err.error()) {
+        continue;
+      }
+
+      unsigned int numGeoms = skinCluster.numOutputConnections();
+      for (unsigned int i = 0; i < numGeoms && !hasSkinCluster; ++i) {
+        unsigned int index = skinCluster.indexForOutputConnection(i);
+        MObject output = skinCluster.outputShapeAtIndex(index);
+        if(output == mesh.object())
+        {
+          hasSkinCluster = true;
+          skinObj = node;
+        }
       }
     }
+
+    if (!hasSkinCluster) {
+      MGlobal::displayError("Selection has no smooth skin bound");
+      forceExit();
+      return;
+    }
   }
 
-  if (!hasSkinCluster) {
-    MGlobal::displayError("Selection has no smooth skin bound");
+  // If we still don't have anything selected, we can't continue.
+  if (!dagPath.isValid() || skinObj.isNull()) {
+    MGlobal::displayError("Nothing selected");
     forceExit();
     return;
   }
