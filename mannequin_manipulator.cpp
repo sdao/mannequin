@@ -44,8 +44,8 @@ bool MannequinManipulator::highlight(MDagPath dagPath, bool force) {
     MFnSingleIndexedComponent comp;
     MObject compObj = comp.create(MFn::kMeshPolygonComponent);
 
-    int highlightIndex = _ctx->influenceIndexForMeshDagPath(dagPath);
-    int selectionIndex = _ctx->influenceIndexForMeshDagPath(
+    int highlightIndex = _ctx->influenceIndexForJointDagPath(dagPath);
+    int selectionIndex = _ctx->influenceIndexForJointDagPath(
       _ctx->selectionDagPath());
 
     for (int i = 0; i < numPolygons; ++i) {

@@ -301,7 +301,13 @@ def setupMannequinUI():
     influenceObjectsStr = cmds.mannequinContext(currentContext,
                                                  q=True,
                                                  io=True)
-    influenceObjects = influenceObjectsStr.split(" ")
+    ioTokens = influenceObjectsStr.split(" ")
+    ioDagPaths = ioTokens[::2]
+    ioPresentations = ioTokens[1::2]
+    for x in zip(ioDagPaths, ioPresentations):
+        print(x)
+
+    influenceObjects = ioDagPaths
 
     mannequinDockPtr = ui.MQtUtil.findLayout("mannequinPaletteDock")
     mannequinDock = wrapInstance(long(mannequinDockPtr), QWidget)
