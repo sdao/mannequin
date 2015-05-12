@@ -1,6 +1,5 @@
 #include "mannequin.h"
 #include "mannequin_manipulator.h"
-#include "move_manipulator.h"
 #include "util.h"
 
 #include <limits>
@@ -13,7 +12,6 @@
 #include <maya/MSelectionList.h>
 #include <maya/MFnMesh.h>
 #include <maya/MFnRotateManip.h>
-#include <maya/MFnFreePointTriadManip.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MDagPathArray.h>
 
@@ -41,36 +39,22 @@ void MannequinContext::select(const MDagPath& dagPath) {
   deleteManipulators();
   addMannequinManipulator(oldHighlight);
 
-  MFnRotateManip rotateManip(_jointManip);
+  MFnRotateManip rotateManip(_rotateManip);
   if (_selection.hasFn(MFn::kTransform)) {
-    // Determine which manipulator we should be adding.
-    int style = presentationStyleForJointDagPath(_selection);
+    MFnRotateManip rotateManip;
+    _rotateManip = rotateManip.create();
 
     MFnTransform selectionXform(_selection);
+    MPlug rotationPlug = selectionXform.findPlug("rotate");
     calculateJointLengthRatio(_selection);
 
-    if (style & JointPresentationStyle::ROTATE) {
-      MFnRotateManip rotateManip;
-      _jointManip = rotateManip.create();
-      MPlug rotationPlug = selectionXform.findPlug("rotate");
-
-      rotateManip.connectToRotationPlug(rotationPlug);
-      rotateManip.displayWithNode(_selection.node());
-      rotateManip.setManipScale(manipAdjustedScale());
-      rotateManip.setRotateMode(MFnRotateManip::kObjectSpace);
-      addManipulator(_jointManip);
-    } else if (style & JointPresentationStyle::TRANSLATE) {
-			MObject manipObject;
-      MoveManipulator* manipulator =
-        (MoveManipulator*)MoveManipulator::newManipulator(
-          "MannequinMoveManipulator", manipObject);
-
-      manipulator->connectToDependNode(_selection.node());
-      addManipulator(manipObject);
-    }
+    rotateManip.connectToRotationPlug(rotationPlug);
+    rotateManip.displayWithNode(_selection.node());
+    rotateManip.setManipScale(manipAdjustedScale());
+    rotateManip.setRotateMode(MFnRotateManip::kObjectSpace);
+    addManipulator(_rotateManip);
   } else {
-    // Nothing selected.
-    _jointManip = MObject::kNullObj;
+    _rotateManip = MObject::kNullObj;
   }
 
   MString pythonSelectionCallback;
@@ -93,16 +77,13 @@ MDagPath MannequinContext::selectionDagPath() const {
   return _selection;
 }
 
-void MannequinContext::calculateDagLookupTables(MObject skinObj) {
+void MannequinContext::calculateDagIndexLookup(MObject skinObj) {
   MFnSkinCluster skin(skinObj);
   MDagPathArray influenceObjects;
   unsigned int numInfluences = skin.influenceObjects(influenceObjects);
 
   for (int i = 0; i < numInfluences; ++i) {
-    MDagPath dagPath = influenceObjects[i];
-    _dagIndexLookup[dagPath] = i;
-    _dagStyleLookup[dagPath] = dagPath.childCount() == 0 ?
-      JointPresentationStyle::TRANSLATE : JointPresentationStyle::ROTATE;
+    _dagIndexLookup[influenceObjects[i]] = i;
   }
 }
 
@@ -232,7 +213,7 @@ bool MannequinContext::addMannequinManipulator(MDagPath newHighlight) {
 bool MannequinContext::intersectRotateManip(MPoint linePoint,
   MVector lineDirection,
   float* distanceOut) {
-  if (_jointManip.isNull()) {
+  if (_rotateManip.isNull()) {
     return false;
   }
 
@@ -271,7 +252,7 @@ void MannequinContext::setManipScale(double scale) {
 
   _scale = scale;
 
-  if (!_jointManip.isNull()) {
+  if (!_rotateManip.isNull()) {
     reselect();
   }
 }
@@ -298,7 +279,7 @@ void MannequinContext::setManipAutoAdjust(bool autoAdjust) {
 
   _autoAdjust = autoAdjust;
 
-  if (!_jointManip.isNull()) {
+  if (!_rotateManip.isNull()) {
     reselect();
   }
 }
@@ -307,23 +288,13 @@ double MannequinContext::manipAdjustedScale() const {
   return manipScale() * MANIP_ADJUSTMENT * _longestJoint * _jointLengthRatio;
 }
 
-int MannequinContext::influenceIndexForJointDagPath(const MDagPath& dagPath) {
+int MannequinContext::influenceIndexForMeshDagPath(MDagPath dagPath) {
   auto value = _dagIndexLookup.find(dagPath);
   if (value != _dagIndexLookup.end()) {
     return value->second;
   }
 
   return -1;
-}
-
-int MannequinContext::presentationStyleForJointDagPath(
-  const MDagPath& dagPath) const {
-    auto styleIter = _dagStyleLookup.find(dagPath);
-    if (styleIter == _dagStyleLookup.end()) {
-      return JointPresentationStyle::NONE;
-    }
-
-    return styleIter->second;
 }
 
 void MannequinContext::toolOnSetup(MEvent& event) {
@@ -394,8 +365,8 @@ void MannequinContext::toolOnSetup(MEvent& event) {
     return;
   }
 
-  // Add DAG paths to their lookup tables.
-  calculateDagLookupTables(skinObj);
+  // Add DAG paths to lookup table.
+  calculateDagIndexLookup(skinObj);
 
   // Calculate the max influences for each face.
   calculateMaxInfluences(dagPath, skinObj);
@@ -425,10 +396,9 @@ void MannequinContext::toolOffCleanup() {
   select(MDagPath());
 
   _mannequinManip = NULL;
-  _jointManip = MObject::kNullObj;
+  _rotateManip = MObject::kNullObj;
   _maxInfluences.clear();
   _dagIndexLookup.clear();
-  _dagStyleLookup.clear();
 
   deleteManipulators();
   MGlobal::clearSelectionList();
@@ -571,13 +541,7 @@ MStatus MannequinContextCommand::doQueryFlags() {
         result += " ";
       }
 
-      MDagPath dagPath = influenceObjects[i];
-      int style = _mannequinContext->presentationStyleForJointDagPath(dagPath);
-
-      result += dagPath.fullPathName();
-      result += " !";
-      result += (style & JointPresentationStyle::ROTATE) ? "r" : "";
-      result += (style & JointPresentationStyle::TRANSLATE) ? "t" : "";
+      result += influenceObjects[i].fullPathName();
     }
 
     setResult(result);
@@ -627,12 +591,6 @@ MStatus initializePlugin(MObject obj)
     &MannequinManipulator::initialize,
     MPxNode::kManipulatorNode);
 
-  status = plugin.registerNode("MannequinMoveManipulator",
-    MoveManipulator::id,
-    &MoveManipulator::creator,
-    &MoveManipulator::initialize,
-    MPxNode::kManipContainer);
-
   status = MGlobal::executePythonCommand("from mannequin import *");
   status = MGlobal::sourceFile("mannequin.mel");
   status = MGlobal::executeCommand("mannequinInstallShelf");
@@ -647,7 +605,6 @@ MStatus uninitializePlugin(MObject obj)
 
   status = plugin.deregisterContextCommand("mannequinContext");
   status = plugin.deregisterNode(MannequinManipulator::id);
-  status = plugin.deregisterNode(MoveManipulator::id);
 
   return status;
 }
