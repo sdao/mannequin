@@ -10,12 +10,19 @@
 #include <maya/MDagPath.h>
 #include <maya/MPoint.h>
 #include <maya/MVector.h>
+
 #include <boost/optional.hpp>
 
 #include "stdext.h"
 
 class MannequinManipulator;
 class MannequinMoveManipulator;
+
+namespace JointPresentationStyle {
+  constexpr int NONE = 0;
+  constexpr int ROTATE = 1 << 1;
+  constexpr int TRANSLATE = 1 << 2;
+}
 
 class MannequinContext : public MPxContext {
 public:
@@ -24,7 +31,7 @@ public:
   void select(const MDagPath& dagPath);
   void reselect();
   MDagPath selectionDagPath() const;
-  void calculateDagIndexLookup(MObject skinObj);
+  void calculateDagLookupTables(MObject skinObj);
   void calculateMaxInfluences(MDagPath meshDagPath, MObject skinObject);
   void calculateLongestJoint(MObject skinObject);
   void calculateJointLengthRatio(MDagPath jointDagPath);
@@ -38,7 +45,8 @@ public:
   bool manipAutoAdjust() const;
   void setManipAutoAdjust(bool autoAdjust);
   double manipAdjustedScale() const;
-  int influenceIndexForMeshDagPath(MDagPath dagPath);
+  int influenceIndexForJointDagPath(const MDagPath& dagPath);
+  int presentationStyleForJointDagPath(const MDagPath& dagPath) const;
 
   virtual void toolOnSetup(MEvent& event) override;
   virtual void toolOffCleanup() override;
@@ -59,10 +67,11 @@ private:
   MObject _skinObject;
   std::vector<int> _maxInfluences;
   std::map<MDagPath, int> _dagIndexLookup;
+  std::map<MDagPath, int> _dagStyleLookup;
 
   MDagPath _selection;
   MannequinManipulator* _mannequinManip;
-  MObject _rotateManip;
+  void* _rotateManip;
   MannequinMoveManipulator* _moveManip;
 
   mutable boost::optional<double> _scale;
