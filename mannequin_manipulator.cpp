@@ -104,10 +104,9 @@ MStatus MannequinManipulator::doMove(M3dView& view, bool& refresh) {
       break;
     }
 
-    bool hitRotateManip = _ctx->intersectRotateManip(linePoint, lineDirection,
-      NULL);
-    if (hitRotateManip) {
-      // We're pointing at the rotation manipulator.
+    bool hitManip = _ctx->intersectManip(linePoint, lineDirection);
+    if (hitManip) {
+      // We're pointing at the rotation/translation manipulator.
       break;
     }
 

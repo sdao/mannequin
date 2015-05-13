@@ -1,5 +1,6 @@
 #include "mannequin.h"
 #include "mannequin_manipulator.h"
+#include "move_manipulator.h"
 #include "util.h"
 
 #include <limits>
@@ -18,7 +19,8 @@
 constexpr double MannequinContext::MANIP_DEFAULT_SCALE;
 constexpr double MannequinContext::MANIP_ADJUSTMENT;
 
-MannequinContext::MannequinContext() {}
+MannequinContext::MannequinContext() : _mannequinManip(nullptr),
+                                       _moveManip(nullptr) {}
 
 void MannequinContext::forceExit() {
   MGlobal::executeCommand("setToolTo $gSelect");
@@ -30,31 +32,42 @@ void MannequinContext::select(const MDagPath& dagPath) {
   }
 
   _selection = dagPath;
+  calculateJointLengthRatio(_selection);
 
   MDagPath oldHighlight;
   if (_mannequinManip) {
     // Preserve old highlight while transitioning manipulators.
     oldHighlight = _mannequinManip->highlightedDagPath();
   }
+
   deleteManipulators();
   addMannequinManipulator(oldHighlight);
+  _rotateManip = MObject::kNullObj;
+  _moveManip = nullptr;
 
-  MFnRotateManip rotateManip(_rotateManip);
   if (_selection.hasFn(MFn::kTransform)) {
+    /*
     MFnRotateManip rotateManip;
     _rotateManip = rotateManip.create();
 
     MFnTransform selectionXform(_selection);
     MPlug rotationPlug = selectionXform.findPlug("rotate");
-    calculateJointLengthRatio(_selection);
 
     rotateManip.connectToRotationPlug(rotationPlug);
     rotateManip.displayWithNode(_selection.node());
     rotateManip.setManipScale(manipAdjustedScale());
     rotateManip.setRotateMode(MFnRotateManip::kObjectSpace);
     addManipulator(_rotateManip);
-  } else {
-    _rotateManip = MObject::kNullObj;
+    */
+
+    MObject moveManipObj;
+    MStatus err;
+    _moveManip = (MannequinMoveManipulator*)MPxManipulatorNode::newManipulator(
+      "MannequinMoveManipulator",
+      moveManipObj, &err);
+    _moveManip->connectToDependNode(_selection.node());
+    _moveManip->setManipScale(manipAdjustedScale());
+    addManipulator(moveManipObj);
   }
 
   MString pythonSelectionCallback;
@@ -160,7 +173,7 @@ void MannequinContext::calculateLongestJoint(MObject skinObj) {
 }
 
 void MannequinContext::calculateJointLengthRatio(MDagPath jointDagPath) {
-  if (_autoAdjust && _autoAdjust.value()) {
+  if (_autoAdjust && _autoAdjust.value() && jointDagPath.isValid()) {
     unsigned int children = jointDagPath.childCount();
     double maxLength = 0.0;
 
@@ -210,25 +223,36 @@ bool MannequinContext::addMannequinManipulator(MDagPath newHighlight) {
   return true;
 }
 
-bool MannequinContext::intersectRotateManip(MPoint linePoint,
-  MVector lineDirection,
-  float* distanceOut) {
-  if (_rotateManip.isNull()) {
-    return false;
+bool MannequinContext::intersectManip(MPoint linePoint, MVector lineDirection) {
+  if (!_rotateManip.isNull()) {
+    MStatus err;
+    MFnTransform selectionXform(_selection);
+    MPoint selectionPivot = selectionXform.rotatePivot(MSpace::kWorld, &err);
+
+    // Extend manipulator radius a bit because of the free-rotation "shell".
+    float manipRadius = manipAdjustedScale() * MFnManip3D::globalSize() * 1.25f;
+
+    bool hit;
+    float distanceOut;
+    hit = Util::raySphereIntersection(linePoint,
+      lineDirection,
+      selectionPivot,
+      manipRadius,
+      &distanceOut);
+
+    if (hit) {
+      return true;
+    }
   }
 
-  MStatus err;
-  MFnTransform selectionXform(_selection);
-  MPoint selectionPivot = selectionXform.rotatePivot(MSpace::kWorld, &err);
+  if (_moveManip) {
+    bool hit = _moveManip->active();
+    if (hit) {
+      return true;
+    }
+  }
 
-  // Extend manipulator radius a bit because of the free-rotation "shell".
-  float manipRadius = manipAdjustedScale() * MFnManip3D::globalSize() * 1.25f;
-
-  return Util::raySphereIntersection(linePoint,
-    lineDirection,
-    selectionPivot,
-    manipRadius,
-    distanceOut);
+  return false;
 }
 
 double MannequinContext::manipScale() const {
@@ -252,7 +276,7 @@ void MannequinContext::setManipScale(double scale) {
 
   _scale = scale;
 
-  if (!_rotateManip.isNull()) {
+  if (!_rotateManip.isNull() || _moveManip) {
     reselect();
   }
 }
@@ -279,7 +303,7 @@ void MannequinContext::setManipAutoAdjust(bool autoAdjust) {
 
   _autoAdjust = autoAdjust;
 
-  if (!_rotateManip.isNull()) {
+  if (!_rotateManip.isNull() || _moveManip) {
     reselect();
   }
 }
@@ -395,8 +419,9 @@ void MannequinContext::toolOnSetup(MEvent& event) {
 void MannequinContext::toolOffCleanup() {
   select(MDagPath());
 
-  _mannequinManip = NULL;
+  _mannequinManip = nullptr;
   _rotateManip = MObject::kNullObj;
+  _moveManip = nullptr;
   _maxInfluences.clear();
   _dagIndexLookup.clear();
 
@@ -447,7 +472,7 @@ void MannequinContext::updateText() {
 }
 
 MannequinContextCommand::MannequinContextCommand()
-  : _mannequinContext(NULL) {}
+  : _mannequinContext(nullptr) {}
 
 MPxContext* MannequinContextCommand::makeObj() {
   _mannequinContext = new MannequinContext();
@@ -591,6 +616,12 @@ MStatus initializePlugin(MObject obj)
     &MannequinManipulator::initialize,
     MPxNode::kManipulatorNode);
 
+  status = plugin.registerNode("MannequinMoveManipulator",
+    MannequinMoveManipulator::id,
+    &MannequinMoveManipulator::creator,
+    &MannequinMoveManipulator::initialize,
+    MPxNode::kManipulatorNode);
+
   status = MGlobal::executePythonCommand("from mannequin import *");
   status = MGlobal::sourceFile("mannequin.mel");
   status = MGlobal::executeCommand("mannequinInstallShelf");
@@ -605,6 +636,7 @@ MStatus uninitializePlugin(MObject obj)
 
   status = plugin.deregisterContextCommand("mannequinContext");
   status = plugin.deregisterNode(MannequinManipulator::id);
+  status = plugin.deregisterNode(MannequinMoveManipulator::id);
 
   return status;
 }

@@ -15,6 +15,7 @@
 #include "stdext.h"
 
 class MannequinManipulator;
+class MannequinMoveManipulator;
 
 class MannequinContext : public MPxContext {
 public:
@@ -31,9 +32,7 @@ public:
   MDagPath meshDagPath() const;
   MObject skinObject() const;
   bool addMannequinManipulator(MDagPath newHighlight = MDagPath());
-  bool intersectRotateManip(MPoint linePoint,
-    MVector lineDirection,
-    float* distanceOut);
+  bool intersectManip(MPoint linePoint, MVector lineDirection);
   double manipScale() const;
   void setManipScale(double scale);
   bool manipAutoAdjust() const;
@@ -64,6 +63,7 @@ private:
   MDagPath _selection;
   MannequinManipulator* _mannequinManip;
   MObject _rotateManip;
+  MannequinMoveManipulator* _moveManip;
 
   mutable boost::optional<double> _scale;
   mutable boost::optional<double> _autoAdjust;

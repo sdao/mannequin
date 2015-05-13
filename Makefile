@@ -37,9 +37,11 @@ SRCDIR := .
 DSTDIR := .
 
 mannequin_SOURCES  := $(SRCDIR)/mannequin.cpp \
-	$(SRCDIR)/mannequin_manipulator.cpp
+	$(SRCDIR)/mannequin_manipulator.cpp \
+	$(SRCDIR)/move_manipulator.cpp
 mannequin_OBJECTS  := $(SRCDIR)/mannequin.o \
-	$(SRCDIR)/mannequin_manipulator.o
+	$(SRCDIR)/mannequin_manipulator.o \
+	$(SRCDIR)/move_manipulator.o
 mannequin_PLUGIN   := $(DSTDIR)/mannequin.$(EXT)
 mannequin_MAKEFILE := $(DSTDIR)/Makefile
 
