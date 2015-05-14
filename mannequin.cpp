@@ -116,28 +116,26 @@ void MannequinContext::calculateMaxInfluences(MDagPath dagPath,
   MFnMesh mesh(dagPath);
   MFnSkinCluster skin(skinObj);
 
-  int numPolygons = mesh.numPolygons();
-  _maxInfluences.resize(numPolygons);
+  MFnSingleIndexedComponent comp;
+  MObject compObj = comp.create(MFn::kMeshVertComponent);
+  comp.setCompleteData(mesh.numVertices());
+
+  MDoubleArray weights;
+  unsigned int numInfluences;
+  skin.getWeights(dagPath, compObj, weights, numInfluences);
+
+  _maxInfluences.resize(mesh.numPolygons());
 
   int i = 0;
   for (MItMeshPolygon it(dagPath); !it.isDone(); it.next()) {
     MIntArray polyVertices;
     it.getVertices(polyVertices);
 
-    MFnSingleIndexedComponent comp;
-    MObject compObj = comp.create(MFn::kMeshVertComponent);
-    comp.addElements(polyVertices);
-
-    MDoubleArray weights;
-    unsigned int numInfluences;
-    skin.getWeights(dagPath, compObj, weights, numInfluences);
-
-    int count = 0;
     std::vector<double> weightSums(numInfluences, 0.0f);
     for (int vtx = 0; vtx < polyVertices.length(); ++vtx) {
+      int vtxId = polyVertices[vtx];
       for (int influence = 0; influence < numInfluences; ++influence) {
-        weightSums[influence] += weights[count];
-        count++;
+        weightSums[influence] += weights[vtxId * numInfluences + influence];
       }
     }
 
