@@ -304,9 +304,6 @@ def setupMannequinUI():
     ioTokens = influenceObjectsStr.split(" ")
     ioDagPaths = ioTokens[::2]
     ioPresentations = ioTokens[1::2]
-    for x in zip(ioDagPaths, ioPresentations):
-        print(x)
-
     influenceObjects = ioDagPaths
 
     mannequinDockPtr = ui.MQtUtil.findLayout("mannequinPaletteDock")

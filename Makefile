@@ -16,7 +16,7 @@ ifndef INCL_BUILDRULES
 #
 # Include platform specific build settings
 #
-TOP := /Applications/Autodesk/maya2015/devkit/plug-ins
+TOP := /Applications/Autodesk/maya2016/devkit/plug-ins
 include $(TOP)/buildrules
 
 C++FLAGS += -std=c++11

@@ -13,9 +13,10 @@
 #include <maya/MSelectionList.h>
 #include <maya/MFnMesh.h>
 #include <maya/MFnRotateManip.h>
-#include <maya/MFnFreePointTriadManip.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MDagPathArray.h>
+#include <maya/M3dView.h>
+#include <maya/MItMeshPolygon.h>
 
 constexpr double MannequinContext::MANIP_DEFAULT_SCALE;
 constexpr double MannequinContext::MANIP_ADJUSTMENT;
@@ -118,9 +119,10 @@ void MannequinContext::calculateMaxInfluences(MDagPath dagPath,
   int numPolygons = mesh.numPolygons();
   _maxInfluences.resize(numPolygons);
 
-  for (int i = 0; i < numPolygons; ++i) {
+  int i = 0;
+  for (MItMeshPolygon it(dagPath); !it.isDone(); it.next()) {
     MIntArray polyVertices;
-    mesh.getPolygonVertices(i, polyVertices);
+    it.getVertices(polyVertices);
 
     MFnSingleIndexedComponent comp;
     MObject compObj = comp.create(MFn::kMeshVertComponent);
@@ -148,7 +150,7 @@ void MannequinContext::calculateMaxInfluences(MDagPath dagPath,
       }
     }
 
-    _maxInfluences[i] = maxIndex;
+    _maxInfluences[i++] = maxIndex;
   }
 }
 
@@ -233,8 +235,12 @@ bool MannequinContext::addMannequinManipulator(MDagPath newHighlight) {
   return true;
 }
 
-bool MannequinContext::intersectManip(MPoint linePoint, MVector lineDirection) {
+bool MannequinContext::intersectManip(MPxManipulatorNode* manip) {
   if (_rotateManip) {
+    MPoint linePoint;
+    MVector lineDirection;
+    manip->mouseRayWorld(linePoint, lineDirection);
+
     MStatus err;
     MFnTransform selectionXform(_selection);
     MPoint selectionPivot = selectionXform.rotatePivot(MSpace::kWorld, &err);
@@ -256,7 +262,7 @@ bool MannequinContext::intersectManip(MPoint linePoint, MVector lineDirection) {
   }
 
   if (_moveManip) {
-    bool hit = _moveManip->active();
+    bool hit = _moveManip->intersectManip(manip);
     if (hit) {
       return true;
     }
@@ -461,21 +467,20 @@ void MannequinContext::getClassName(MString& name) const {
 MStatus MannequinContext::doPress(MEvent& event,
   MHWRender::MUIDrawManager& drawMgr,
   const MHWRender::MFrameContext& context) {
-  doPress();
-  return MS::kSuccess;
+  return doPress();
 }
 
 MStatus MannequinContext::doPress(MEvent& event) {
-  doPress();
-  return MS::kSuccess;
+  return doPress();
 }
 
-void MannequinContext::doPress() {
+MStatus MannequinContext::doPress() {
   if (!_mannequinManip) {
-    return;
+    return MS::kUnknownParameter;
   }
 
   select(_mannequinManip->highlightedDagPath());
+  return MS::kSuccess;
 }
 
 void MannequinContext::abortAction() {

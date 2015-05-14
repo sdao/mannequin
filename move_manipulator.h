@@ -11,7 +11,7 @@ public:
   float manipScale() const;
 
   void recalcMetrics();
-  bool active() const;
+  bool intersectManip(MPxManipulatorNode* manip) const;
 
   virtual void postConstructor() override;
   virtual void draw(M3dView &view,
@@ -22,7 +22,9 @@ public:
   virtual void drawUI(MHWRender::MUIDrawManager &drawManager,
     const MHWRender::MFrameContext &frameContext) const override;
   virtual MStatus connectToDependNode(const MObject &dependNode) override;
-  virtual MStatus doMove(M3dView& view, bool& refresh) override;
+  virtual MStatus doPress(M3dView& view) override;
+  virtual MStatus doDrag(M3dView& view) override;
+  virtual MStatus doRelease(M3dView& view) override;
 
   static void* creator();
   static MStatus initialize();
@@ -30,6 +32,7 @@ public:
 
 private:
   int _translateIndex;
+  MPlug _translatePlug;
 
   MTransformationMatrix _parentXform;
   MTransformationMatrix _childXform;
@@ -38,6 +41,7 @@ private:
   short _yColor;
   short _zColor;
   short _selColor;
+  GLuint _glPickableItem;
 
   float _manipScale;
   MVector _x;
@@ -45,5 +49,7 @@ private:
   MVector _z;
   MPoint _origin;
 
-  int _selectedAxis;
+  MPoint _originalTranslate;
+  short _originalMouseX;
+  short _originalMouseY;
 };

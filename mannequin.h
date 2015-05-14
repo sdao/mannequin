@@ -10,6 +10,7 @@
 #include <maya/MDagPath.h>
 #include <maya/MPoint.h>
 #include <maya/MVector.h>
+#include <maya/MPxManipulatorNode.h>
 
 #include <boost/optional.hpp>
 
@@ -39,7 +40,7 @@ public:
   MDagPath meshDagPath() const;
   MObject skinObject() const;
   bool addMannequinManipulator(MDagPath newHighlight = MDagPath());
-  bool intersectManip(MPoint linePoint, MVector lineDirection);
+  bool intersectManip(MPxManipulatorNode* manip);
   double manipScale() const;
   void setManipScale(double scale);
   bool manipAutoAdjust() const;
@@ -47,17 +48,18 @@ public:
   double manipAdjustedScale() const;
   int influenceIndexForJointDagPath(const MDagPath& dagPath);
   int presentationStyleForJointDagPath(const MDagPath& dagPath) const;
+  void updateText();
 
   virtual void toolOnSetup(MEvent& event) override;
   virtual void toolOffCleanup() override;
   virtual void getClassName(MString& name) const override;
+  virtual void abortAction() override;
+
   virtual MStatus doPress(MEvent& event,
     MHWRender::MUIDrawManager& drawMgr,
     const MHWRender::MFrameContext& context);
   virtual MStatus doPress(MEvent& event);
-  virtual void abortAction() override;
-  void doPress();
-  void updateText();
+  MStatus doPress();
 
 private:
   static constexpr double MANIP_DEFAULT_SCALE = 1.5;
