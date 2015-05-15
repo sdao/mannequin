@@ -15,8 +15,8 @@ global proc shelf_Mannequin () {
         -font "plainLabelFont"
         -overlayLabelColor 0.8 0.8 0.8
         -overlayLabelBackColor 0 0 0 0.2
-        -image "mannequin_32.png"
-        -image1 "mannequin_32.png"
+        -image "mannequin_maya2016.png"
+        -image1 "mannequin_maya2016.png"
         -style "iconOnly"
         -marginWidth 1
         -marginHeight 1

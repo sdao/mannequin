@@ -435,7 +435,7 @@ void MannequinContext::toolOnSetup(MEvent& event) {
   MGlobal::clearSelectionList();
 
   // Set image, title text, etc.
-  setImage("mannequin_32.png", MPxContext::kImage1);
+  setImage("mannequin_maya2016.png", MPxContext::kImage1);
   setTitleString("Mannequin");
   updateText();
 }
