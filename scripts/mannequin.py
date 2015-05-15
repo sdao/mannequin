@@ -164,7 +164,7 @@ class MannequinToolPanel():
             panel = self.panels[(nodeName, style)]
             panel.groupBox.setFlat(isTheOne)
 
-            if isTheOne:
+            if isTheOne and panel.isVisible():
                 y = panel.parentWidget().pos().y()
                 height = panel.parentWidget().height()
                 self.scrollEnsureVisible(y, height)
@@ -473,9 +473,9 @@ class MannequinToolPanel():
 
         for nodeName, style in self.panels:
             if text.lower() in nodeName.lower():
-                self.panels[nodeName].show()
+                self.panels[(nodeName, style)].show()
             else:
-                self.panels[nodeName].hide()
+                self.panels[(nodeName, style)].hide()
 
         self.gui.layout().activate()
         self.relayout()
