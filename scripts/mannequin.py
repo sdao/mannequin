@@ -450,10 +450,10 @@ def organizeJoints(joints):
     """
     def stripName(n):
         n = n.lower()
-        n = n.replace("left", "")
-        n = n.replace("right", "")
-        n = n.replace("l", "")
-        n = n.replace("r", "")
+        n = n.replace("left", "~")
+        n = n.replace("right", "~")
+        n = n.replace("l", "~")
+        n = n.replace("r", "~")
         return n
 
     def leftHeuristic(n):
@@ -482,6 +482,8 @@ def organizeJoints(joints):
 
         jointGroups[strippedName].append(joint)
 
+    print(strippedJointNames)
+
     # Sort everything into pairs if possible.
     jointPairs = []
     for i in jointGroups:
@@ -493,9 +495,7 @@ def organizeJoints(joints):
             continue
 
         # If group doesn't have matching presentation, then can't double up.
-        firstPresentation = group[0][2]
-        nonMatches = [j for j in group if j[2] != firstPresentation]
-        if len(nonMatches) > 0:
+        if group[0][2] != group[1][2]:
             jointPairs += [[x] for x in group]
             continue
 
