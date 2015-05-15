@@ -18,18 +18,38 @@
 #include <maya/M3dView.h>
 #include <maya/MItMeshPolygon.h>
 
+#define TERMINAL_JOINTS_ROTATE
+
 constexpr double MannequinContext::MANIP_DEFAULT_SCALE;
 constexpr double MannequinContext::MANIP_ADJUSTMENT;
 
-MannequinContext::MannequinContext() : _mannequinManip(nullptr),
-                                       _moveManip(nullptr) {}
+MannequinContext::MannequinContext()
+  : _mannequinManip(nullptr),
+    _moveManip(nullptr),
+    _selectionStyle(JointPresentationStyle::NONE) {}
 
 void MannequinContext::forceExit() {
   MGlobal::executeCommand("setToolTo $gSelect");
 }
 
-void MannequinContext::select(const MDagPath& dagPath) {
-  if (_selection == dagPath) {
+void MannequinContext::select(const MDagPath& dagPath, int style) {
+  // Determine which style to use/request.
+  if (style == JointPresentationStyle::NONE) {
+    // Try to preserve the presentation style used previously.
+    style = _selectionStyle;
+  }
+
+  int availableStyles = presentationStyleForJointDagPath(dagPath);
+  if (style & availableStyles) {
+    // Requested presentation style available.
+    style = style & availableStyles;
+  } else {
+    // Requested presentation style unavailable, so ignore it.
+    style = availableStyles;
+  }
+
+  // If the DAG path + style combo is still the same, then DO NOTHING.
+  if ((_selection == dagPath) && (style & _selectionStyle)) {
     return;
   }
 
@@ -48,9 +68,9 @@ void MannequinContext::select(const MDagPath& dagPath) {
   _moveManip = nullptr;
 
   if (_selection.hasFn(MFn::kTransform)) {
-    int style = presentationStyleForJointDagPath(_selection);
     MFnTransform selectionXform(_selection);
 
+    // Just use the first presentation style that we can.
     if (style & JointPresentationStyle::ROTATE) {
       MFnRotateManip rotateManip;
       MObject rotateManipObj = rotateManip.create();
@@ -63,6 +83,8 @@ void MannequinContext::select(const MDagPath& dagPath) {
       rotateManip.setManipScale(manipAdjustedScale());
       rotateManip.setRotateMode(MFnRotateManip::kObjectSpace);
 
+      _availableStyles = availableStyles;
+      _selectionStyle = JointPresentationStyle::ROTATE;
       addManipulator(rotateManipObj);
     } else if (style & JointPresentationStyle::TRANSLATE) {
       MObject moveManipObj;
@@ -74,13 +96,16 @@ void MannequinContext::select(const MDagPath& dagPath) {
       _moveManip->connectToDependNode(_selection.node());
       _moveManip->setManipScale(manipAdjustedScale() * 1.25f);
 
+      _availableStyles = availableStyles;
+      _selectionStyle = JointPresentationStyle::TRANSLATE;
       addManipulator(moveManipObj);
     }
   }
 
   MString pythonSelectionCallback;
-  pythonSelectionCallback.format("mannequinSelectionChanged(\"^1s\")",
-    _selection.fullPathName());
+  pythonSelectionCallback.format("mannequinSelectionChanged(\"^1s\", \"^2s\")",
+    _selection.fullPathName(),
+    JointPresentationStyle::toString(_selectionStyle));
   MGlobal::executePythonCommand(pythonSelectionCallback);
 
   updateText();
@@ -107,7 +132,12 @@ void MannequinContext::calculateDagLookupTables(MObject skinObj) {
     MDagPath dagPath = influenceObjects[i];
     _dagIndexLookup[dagPath] = i;
     _dagStyleLookup[dagPath] = dagPath.childCount() == 0 ?
+#ifdef TERMINAL_JOINTS_ROTATE
+      JointPresentationStyle::TRANSLATE | JointPresentationStyle::ROTATE :
+      JointPresentationStyle::ROTATE;
+#else
       JointPresentationStyle::TRANSLATE : JointPresentationStyle::ROTATE;
+#endif
   }
 }
 
@@ -485,14 +515,41 @@ void MannequinContext::abortAction() {
   select(MDagPath());
 }
 
+void MannequinContext::completeAction() {
+  if (_selection.isValid() && _selectionStyle != _availableStyles) {
+    if (_selectionStyle == JointPresentationStyle::ROTATE) {
+      select(_selection, JointPresentationStyle::TRANSLATE);
+    } else if (_selectionStyle == JointPresentationStyle::TRANSLATE) {
+      select(_selection, JointPresentationStyle::ROTATE);
+    }
+  }
+}
+
 void MannequinContext::updateText() {
-  if (_selection.isValid()) {
+  if (_selection.isValid() && _selectionStyle != _availableStyles) {
+    MString next;
+    if (_selectionStyle == JointPresentationStyle::ROTATE) {
+      next = "translation";
+    } else if (_selectionStyle == JointPresentationStyle::TRANSLATE) {
+      next = "rotation";
+    } else {
+      next = "???";
+    }
+
     MString help;
-    help.format("^1s selected, press ESC to deselect",
+    help.format(
+      "^1s selected. Press ESC to deselect. Press ENTER to switch to ^2s.",
+      _selection.partialPathName(),
+      next);
+    setHelpString(help);
+  } else if (_selection.isValid()) {
+    MString help;
+    help.format(
+      "^1s selected. Press ESC to deselect.",
       _selection.partialPathName());
     setHelpString(help);
   } else {
-    setHelpString("Click on the mesh to select a part");
+    setHelpString("Click on the mesh to select a part.");
   }
 }
 
@@ -596,8 +653,7 @@ MStatus MannequinContextCommand::doQueryFlags() {
 
       result += dagPath.fullPathName();
       result += " ";
-      result += (style & JointPresentationStyle::ROTATE) ? "r" : "";
-      result += (style & JointPresentationStyle::TRANSLATE) ? "t" : "";
+      result += JointPresentationStyle::toString(style);
     }
 
     setResult(result);

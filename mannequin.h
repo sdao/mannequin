@@ -23,13 +23,21 @@ namespace JointPresentationStyle {
   constexpr int NONE = 0;
   constexpr int ROTATE = 1 << 1;
   constexpr int TRANSLATE = 1 << 2;
+
+  inline MString toString(int style) {
+    MString result = "";
+    result += (style & JointPresentationStyle::ROTATE) ? "r" : "";
+    result += (style & JointPresentationStyle::TRANSLATE) ? "t" : "";
+    return result;
+  }
 }
 
 class MannequinContext : public MPxContext {
 public:
   MannequinContext();
   void forceExit();
-  void select(const MDagPath& dagPath);
+  void select(const MDagPath& dagPath, int style =
+    JointPresentationStyle::NONE);
   void reselect();
   MDagPath selectionDagPath() const;
   void calculateDagLookupTables(MObject skinObj);
@@ -54,6 +62,7 @@ public:
   virtual void toolOffCleanup() override;
   virtual void getClassName(MString& name) const override;
   virtual void abortAction() override;
+  virtual void completeAction() override;
 
   virtual MStatus doPress(MEvent& event,
     MHWRender::MUIDrawManager& drawMgr,
@@ -72,6 +81,9 @@ private:
   std::map<MDagPath, int> _dagStyleLookup;
 
   MDagPath _selection;
+  int _selectionStyle;
+  int _availableStyles;
+
   MannequinManipulator* _mannequinManip;
   void* _rotateManip;
   MannequinMoveManipulator* _moveManip;

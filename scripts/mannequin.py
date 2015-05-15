@@ -143,13 +143,13 @@ class MannequinToolPanel():
         # Add child panels.
         # All joints in display should match.
         # TODO: Deal with more than one possible presentation.
-        pres = jointDisplay[0][2][:1]
+        presentation = jointDisplay[0][2][:1]
         for joint in jointDisplay:
             dagPath = joint[0]
             dependNode = joint[1]
             self.insertJointDisplayPanel(dagPath,
                                          dependNode,
-                                         pres,
+                                         presentation,
                                          container)
 
         # Add container to UI tree.
@@ -166,15 +166,15 @@ class MannequinToolPanel():
         panelGui = self.loader.load(file)
         file.close()
 
-        # Setup panel validators.
-        panelGui.xEdit.setValidator(self.validator)
-        panelGui.yEdit.setValidator(self.validator)
-        panelGui.zEdit.setValidator(self.validator)
-
         # Register panels according to DAG path.
         nodeName = dagPath.partialPathName()
         self.dagPaths[nodeName] = dagPath
         self.panels[nodeName] = panelGui
+
+        # Setup panel validators.
+        panelGui.xEdit.setValidator(self.validator)
+        panelGui.yEdit.setValidator(self.validator)
+        panelGui.zEdit.setValidator(self.validator)
 
         # Setup panel title.
         if len(nodeName) > self.prefixTrim:
@@ -277,11 +277,11 @@ class MannequinToolPanel():
                 cmds.evalDeferred(self.deferredUpdate, low=True)
 
     def deferredUpdate(self):
-        for nodeName, pres in self.updateQueue:
+        for nodeName, presentation in self.updateQueue:
             if nodeName not in self.dagPaths:
                 continue
 
-            if pres == "r":
+            if presentation == "r":
                 dagPath = self.dagPaths[nodeName]
                 objectXform = om.MFnTransform(dagPath)
                 rotation = om.MEulerRotation()
@@ -291,7 +291,7 @@ class MannequinToolPanel():
                                          rotation.x,
                                          rotation.y,
                                          rotation.z)
-            elif pres == "t":
+            elif presentation == "t":
                 dagPath = self.dagPaths[nodeName]
                 objectXform = om.MFnTransform(dagPath)
                 translation = objectXform.getTranslation(om.MSpace.kTransform)
@@ -593,13 +593,14 @@ def commonPrefix(joints):
     return len(prefix)
 
 
-def mannequinSelectionChanged(dagString):
+def mannequinSelectionChanged(dagString, presentation):
     try:
         selList = om.MSelectionList()
         selList.add(dagString)
         dagPath = om.MDagPath()
         selList.getDagPath(0, dagPath)
         mannequinToolPanel.select(dagPath)
+        print(presentation)
     except:
         mannequinToolPanel.select(None)
 
