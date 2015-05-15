@@ -123,6 +123,10 @@ MDagPath MannequinContext::selectionDagPath() const {
   return _selection;
 }
 
+int MannequinContext::selectionStyle() const {
+  return _selectionStyle;
+}
+
 void MannequinContext::calculateDagLookupTables(MObject skinObj) {
   MFnSkinCluster skin(skinObj);
   MDagPathArray influenceObjects;
@@ -576,7 +580,12 @@ MStatus MannequinContextCommand::doEditFlags() {
     return MS::kInvalidParameter;
   } else if (parse.isFlagSet("-sel")) {
     MStatus err;
-    MString arg = parse.flagArgumentString("-sel", 0, &err);
+    MString nameArg = parse.flagArgumentString("-sel", 0, &err);
+    if (err.error()) {
+      return err;
+    }
+
+    MString styleArg = parse.flagArgumentString("-sel", 1, &err);
     if (err.error()) {
       return err;
     }
@@ -593,14 +602,15 @@ MStatus MannequinContextCommand::doEditFlags() {
       MString fullName = influenceObjects[i].fullPathName();
       MString partialName = influenceObjects[i].partialPathName();
 
-      if (arg == fullName || arg == partialName) {
-        _mannequinContext->select(influenceObjects[i]);
+      if (nameArg == fullName || nameArg == partialName) {
+        _mannequinContext->select(influenceObjects[i],
+          JointPresentationStyle::fromString(styleArg));
         return MS::kSuccess;
       }
     }
 
     MString errMessage;
-    errMessage.format("Couldn't find and select ^1s", arg);
+    errMessage.format("Couldn't find and select ^1s", nameArg);
     MGlobal::displayWarning(errMessage);
   } else if (parse.isFlagSet("-ms")) {
     MStatus err;
@@ -662,6 +672,8 @@ MStatus MannequinContextCommand::doQueryFlags() {
     MString result;
     if (dagPath.isValid()) {
       result = MString(dagPath.fullPathName());
+      result += " ";
+      result += _mannequinContext->selectionStyle();
     } else {
       result = MString("");
     }
@@ -682,7 +694,7 @@ MStatus MannequinContextCommand::appendSyntax() {
 	MSyntax syn = syntax();
 
   syn.addFlag("-io", "-influenceObjects");
-  syn.addFlag("-sel", "-selection", MSyntax::kString);
+  syn.addFlag("-sel", "-selection", MSyntax::kString, MSyntax::kString);
   syn.addFlag("-ms", "-manipSize", MSyntax::kDouble);
   syn.addFlag("-ma", "-manipAdjust", MSyntax::kDouble);
 

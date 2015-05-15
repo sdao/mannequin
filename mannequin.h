@@ -30,6 +30,17 @@ namespace JointPresentationStyle {
     result += (style & JointPresentationStyle::TRANSLATE) ? "t" : "";
     return result;
   }
+
+  inline int fromString(MString string) {
+    int result = JointPresentationStyle::NONE;
+    if (string.index('r') != -1) {
+      result |= JointPresentationStyle::ROTATE;
+    }
+    if (string.index('t') != -1) {
+      result |= JointPresentationStyle::TRANSLATE;
+    }
+    return result;
+  }
 }
 
 class MannequinContext : public MPxContext {
@@ -40,6 +51,7 @@ public:
     JointPresentationStyle::NONE);
   void reselect();
   MDagPath selectionDagPath() const;
+  int selectionStyle() const;
   void calculateDagLookupTables(MObject skinObj);
   void calculateMaxInfluences(MDagPath meshDagPath, MObject skinObject);
   void calculateLongestJoint(MObject skinObject);

@@ -69,17 +69,16 @@ class FocusEventFilter(QObject):
         if event.type() == QEvent.MouseButtonPress:
             for x in self.panels:
                 if self.panels[x].groupBox == widget:
-                    # Select node with name x.
-                    self.selectNode(x)
+                    self.selectNode(x)  # Note: x is a tuple w/ name and style.
                     return True
             return True
 
         return QWidget.eventFilter(self, widget, event)
 
     @staticmethod
-    def selectNode(nodeName):
+    def selectNode(nodeId):
         currentContext = cmds.currentCtx()
-        cmds.mannequinContext(currentContext, e=True, sel=nodeName)
+        cmds.mannequinContext(currentContext, e=True, sel=nodeId)
 
 
 class MannequinToolPanel():
@@ -148,7 +147,7 @@ class MannequinToolPanel():
             self.validator = QDoubleValidator(gui)
             self.validator.setDecimals(3)
 
-    def select(self, dagPath):
+    def select(self, dagPath, targetStyle=None):
         """ Highlights the panel for the given DAG path and ensures it's visible.
 
         :param dagPath: the DAG path that was selected
@@ -160,22 +159,40 @@ class MannequinToolPanel():
         else:
             selectedPanel = dagPath.partialPathName()
 
-        for panel in self.panels:
-            isTheOne = panel == selectedPanel
-            self.panels[panel].groupBox.setFlat(isTheOne)
+        for nodeName, style in self.panels:
+            isTheOne = nodeName == selectedPanel and style == targetStyle
+            panel = self.panels[(nodeName, style)]
+            panel.groupBox.setFlat(isTheOne)
 
             if isTheOne:
-                y = self.panels[panel].parentWidget().pos().y()
-                height = self.panels[panel].parentWidget().height()
+                y = panel.parentWidget().pos().y()
+                height = panel.parentWidget().height()
                 self.scrollEnsureVisible(y, height)
 
-    def layoutJointDisplayRow(self, jointDisplay):
+    def layoutJointGroup(self, jointGroup):
+        """Lays out all the UI for the given joint group. Multiple joint
+        display rows will be created if the group supports several presentation
+        styles.
+
+        :param jointGroup: a group of JointInfos that should be displayed
+                           together
+        :type jointDisplay: list[JointInfo]
+        """
+
+        availableStyles = jointGroup[0].availableStyles
+        for style in availableStyles:
+            self.layoutJointDisplayRow(jointGroup, style)
+
+    def layoutJointDisplayRow(self, jointGroup, style):
         """Creates a row in the Mannequin panel and inserts all the
         constituent panels.
 
-        :param jointDisplay: a group of JointInfos that should be displayed
-                             in the same row
-        :type jointDisplay: list[JointInfo]
+        :param jointGroup: a group of JointInfos that should be displayed in the
+                           same row
+        :type jointGroup: list[JointInfo]
+        :param style: the presentation for the row (e.g. "t" for translate or
+                      "r" for rotate)
+        :type style: str
         """
 
         uiFile = QFile(os.path.join(os.path.dirname(__file__),
@@ -185,10 +202,7 @@ class MannequinToolPanel():
         uiFile.close()
 
         # Add child panels.
-        # All joints in display should match.
-        # TODO: Deal with more than one possible presentation style.
-        style = jointDisplay[0].availableStyles[0]
-        for jointInfo in jointDisplay:
+        for jointInfo in jointGroup:
             self.insertJointDisplayPanel(jointInfo, style, container)
 
         # Add container to UI tree.
@@ -216,7 +230,7 @@ class MannequinToolPanel():
         dagPath = jointInfo.dagPath
         nodeName = dagPath.partialPathName()
         self.dagPaths[nodeName] = dagPath
-        self.panels[nodeName] = panelGui
+        self.panels[(nodeName, style)] = panelGui
 
         # Setup panel validators.
         panelGui.xEdit.setValidator(self.validator)
@@ -314,14 +328,11 @@ class MannequinToolPanel():
 
         nodeName, attrName = plug.name().split(".")
 
-        if nodeName not in self.panels:
-            return
-
-        if attrName[:6] == "rotate":
+        if attrName[:6] == "rotate" and (nodeName, "r") in self.panels:
             self.updateQueue.append((nodeName, "r"))
             if len(self.updateQueue) == 1:
                 cmds.evalDeferred(self.deferredUpdate, low=True)
-        elif attrName[:9] == "translate":
+        elif attrName[:9] == "translate" and (nodeName, "t") in self.panels:
             self.updateQueue.append((nodeName, "t"))
             if len(self.updateQueue) == 1:
                 cmds.evalDeferred(self.deferredUpdate, low=True)
@@ -337,8 +348,10 @@ class MannequinToolPanel():
         for nodeName, style in self.updateQueue:
             if nodeName not in self.dagPaths:
                 continue
+            if (nodeName, style) not in self.panels:
+                continue
 
-            panelGui = self.panels[nodeName]
+            panelGui = self.panels[(nodeName, style)]
             dagPath = self.dagPaths[nodeName]
 
             if style == "r":
@@ -406,7 +419,7 @@ class MannequinToolPanel():
         """
 
         nodeName = dagPath.partialPathName()
-        panelGui = self.panels[nodeName]
+        panelGui = self.panels[(nodeName, "r")]
 
         # Because I'm lazy, I'm going to use the setAttr command!
         # This means that we won't have to convert units -- they should already
@@ -434,7 +447,7 @@ class MannequinToolPanel():
         """
 
         nodeName = dagPath.partialPathName()
-        panelGui = self.panels[nodeName]
+        panelGui = self.panels[(nodeName, "t")]
 
         # Because I'm lazy, I'm going to use the setAttr command!
         # This means that we won't have to convert units -- they should already
@@ -458,11 +471,11 @@ class MannequinToolPanel():
         :type text: str
         """
 
-        for name in self.panels:
-            if text.lower() in name.lower():
-                self.panels[name].show()
+        for nodeName, style in self.panels:
+            if text.lower() in nodeName.lower():
+                self.panels[nodeName].show()
             else:
-                self.panels[name].hide()
+                self.panels[nodeName].hide()
 
         self.gui.layout().activate()
         self.relayout()
@@ -580,7 +593,7 @@ def setupMannequinUI():
 
     jointDisplays = organizeJoints(joints)
     for jointDisplay in jointDisplays:
-        mannequinToolPanel.layoutJointDisplayRow(jointDisplay)
+        mannequinToolPanel.layoutJointGroup(jointDisplay)
     mannequinToolPanel.finishLayout()
 
 
@@ -725,8 +738,7 @@ def mannequinSelectionChanged(dagString, style):
         selList.add(dagString)
         dagPath = om.MDagPath()
         selList.getDagPath(0, dagPath)
-        mannequinToolPanel.select(dagPath)
-        print(style)
+        mannequinToolPanel.select(dagPath, style)
     except:
         mannequinToolPanel.select(None)
 
