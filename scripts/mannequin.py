@@ -13,6 +13,10 @@ from mannequin_widgets import DragRotationWidget, DragTranslationWidget
 import os
 from functools import partial
 from collections import OrderedDict
+from collections import namedtuple
+
+
+JointInfo = namedtuple("JointInfo", "dagPath dependNode availableStyles")
 
 
 class ResizeEventFilter(QObject):
@@ -62,7 +66,7 @@ class FocusEventFilter(QObject):
         self.panels = {}
 
     def eventFilter(self, widget, event):
-        if (event.type() == QEvent.MouseButtonPress):
+        if event.type() == QEvent.MouseButtonPress:
             for x in self.panels:
                 if self.panels[x].groupBox == widget:
                     # Select node with name x.
@@ -142,24 +146,15 @@ class MannequinToolPanel():
 
         # Add child panels.
         # All joints in display should match.
-        # TODO: Deal with more than one possible presentation.
-        presentation = jointDisplay[0][2][:1]
-        for joint in jointDisplay:
-            dagPath = joint[0]
-            dependNode = joint[1]
-            self.insertJointDisplayPanel(dagPath,
-                                         dependNode,
-                                         presentation,
-                                         container)
+        # TODO: Deal with more than one possible presentation style.
+        style = jointDisplay[0].availableStyles[0]
+        for jointInfo in jointDisplay:
+            self.insertJointDisplayPanel(jointInfo, style, container)
 
         # Add container to UI tree.
         self.gui.layout().addWidget(container)
 
-    def insertJointDisplayPanel(self,
-                                dagPath,
-                                dependNode,
-                                presentation,
-                                container):
+    def insertJointDisplayPanel(self, jointInfo, style, container):
         file = QFile(os.path.join(os.path.dirname(__file__),
                                   "panel_single.ui"))
         file.open(QFile.ReadOnly)
@@ -167,6 +162,7 @@ class MannequinToolPanel():
         file.close()
 
         # Register panels according to DAG path.
+        dagPath = jointInfo.dagPath
         nodeName = dagPath.partialPathName()
         self.dagPaths[nodeName] = dagPath
         self.panels[nodeName] = panelGui
@@ -184,14 +180,14 @@ class MannequinToolPanel():
         panelGui.groupBox.setTitle(trimmedName)
 
         # Set up drag-label UI.
-        if presentation == "r":
+        if style == "r":
             rotateXDrag = DragRotationWidget("rotate X", dagPath, 0)
             rotateYDrag = DragRotationWidget("rotate Y", dagPath, 1)
             rotateZDrag = DragRotationWidget("rotate Z", dagPath, 2)
             panelGui.xLabel.layout().addWidget(rotateXDrag, 0, 0)
             panelGui.yLabel.layout().addWidget(rotateYDrag, 0, 0)
             panelGui.zLabel.layout().addWidget(rotateZDrag, 0, 0)
-        elif presentation == "t":
+        elif style == "t":
             translateXDrag = DragTranslationWidget("translate X", dagPath, 0)
             translateYDrag = DragTranslationWidget("translate Y", dagPath, 1)
             translateZDrag = DragTranslationWidget("translate Z", dagPath, 2)
@@ -199,38 +195,27 @@ class MannequinToolPanel():
             panelGui.yLabel.layout().addWidget(translateYDrag, 0, 0)
             panelGui.zLabel.layout().addWidget(translateZDrag, 0, 0)
 
-        # Set color based on presentation type.
-        if presentation == "r":
+        # Set color based on presentation style.
+        if style == "r":
             panelGui.groupBox.setStyleSheet(MannequinStylesheets.STYLE_BLUE)
-        elif presentation == "t":
+        elif style == "t":
             panelGui.groupBox.setStyleSheet(MannequinStylesheets.STYLE_GREEN)
 
         # Set current object properties.
-        if presentation == "r":
-            objectXform = om.MFnTransform(dagPath)
-            rotation = om.MEulerRotation()
-            objectXform.getRotation(rotation)
-            self.updatePanelRotation(panelGui,
-                                     rotation.x,
-                                     rotation.y,
-                                     rotation.z)
-        elif presentation == "t":
-            objectXform = om.MFnTransform(dagPath)
-            translation = objectXform.getTranslation(om.MSpace.kTransform)
-            self.updatePanelTranslation(panelGui,
-                                        translation.x,
-                                        translation.y,
-                                        translation.z)
+        if style == "r":
+            self.updatePanelRotation(panelGui, dagPath)
+        elif style == "t":
+            self.updatePanelTranslation(panelGui, dagPath)
 
         # Register signal for text box editing.
-        if presentation == "r":
+        if style == "r":
             panelGui.xEdit.editingFinished.connect(
                 partial(self.setRotation, dagPath=dagPath, index=0))
             panelGui.yEdit.editingFinished.connect(
                 partial(self.setRotation, dagPath=dagPath, index=1))
             panelGui.zEdit.editingFinished.connect(
                 partial(self.setRotation, dagPath=dagPath, index=2))
-        elif presentation == "t":
+        elif style == "t":
             panelGui.xEdit.editingFinished.connect(
                 partial(self.setTranslation, dagPath=dagPath, index=0))
             panelGui.yEdit.editingFinished.connect(
@@ -240,7 +225,7 @@ class MannequinToolPanel():
 
         # Register callback for attribute update.
         callbackId = om.MNodeMessage.addNodeDirtyPlugCallback(
-            dependNode,
+            jointInfo.dependNode,
             self.dirtyPlugCallback,
             None)
         self.callbacks.append(callbackId)
@@ -277,59 +262,50 @@ class MannequinToolPanel():
                 cmds.evalDeferred(self.deferredUpdate, low=True)
 
     def deferredUpdate(self):
-        for nodeName, presentation in self.updateQueue:
+        for nodeName, style in self.updateQueue:
             if nodeName not in self.dagPaths:
                 continue
 
-            if presentation == "r":
-                dagPath = self.dagPaths[nodeName]
-                objectXform = om.MFnTransform(dagPath)
-                rotation = om.MEulerRotation()
-                objectXform.getRotation(rotation)
-                panelGui = self.panels[nodeName]
-                self.updatePanelRotation(panelGui,
-                                         rotation.x,
-                                         rotation.y,
-                                         rotation.z)
-            elif presentation == "t":
-                dagPath = self.dagPaths[nodeName]
-                objectXform = om.MFnTransform(dagPath)
-                translation = objectXform.getTranslation(om.MSpace.kTransform)
-                panelGui = self.panels[nodeName]
-                self.updatePanelTranslation(panelGui,
-                                            translation.x,
-                                            translation.y,
-                                            translation.z)
+            panelGui = self.panels[nodeName]
+            dagPath = self.dagPaths[nodeName]
+
+            if style == "r":
+                self.updatePanelRotation(panelGui, dagPath)
+            elif style == "t":
+                self.updatePanelTranslation(panelGui, dagPath)
 
         self.updateQueue = []
 
-    def updatePanelRotation(self, panelGui, x, y, z):
-        """Set the panel rotation in internal units (probably radians)."""
-        if x is not None:
-            xx = om.MAngle.internalToUI(x)
-            panelGui.xEdit.setText("{:.3f}".format(xx))
+    def updatePanelRotation(self, panelGui, dagPath):
+        """Sets the panel rotation in internal units (probably radians)."""
 
-        if y is not None:
-            yy = om.MAngle.internalToUI(y)
-            panelGui.yEdit.setText("{:.3f}".format(yy))
+        objectXform = om.MFnTransform(dagPath)
+        rotation = om.MEulerRotation()
+        objectXform.getRotation(rotation)
 
-        if z is not None:
-            zz = om.MAngle.internalToUI(z)
-            panelGui.zEdit.setText("{:.3f}".format(zz))
+        xx = om.MAngle.internalToUI(rotation.x)
+        panelGui.xEdit.setText("{:.3f}".format(xx))
 
-    def updatePanelTranslation(self, panelGui, x, y, z):
-        """Set the panel translation in internal units (probably cm)."""
-        if x is not None:
-            xx = om.MDistance.internalToUI(x)
-            panelGui.xEdit.setText("{:.3f}".format(xx))
+        yy = om.MAngle.internalToUI(rotation.y)
+        panelGui.yEdit.setText("{:.3f}".format(yy))
 
-        if y is not None:
-            yy = om.MDistance.internalToUI(y)
-            panelGui.yEdit.setText("{:.3f}".format(yy))
+        zz = om.MAngle.internalToUI(rotation.z)
+        panelGui.zEdit.setText("{:.3f}".format(zz))
 
-        if z is not None:
-            zz = om.MDistance.internalToUI(z)
-            panelGui.zEdit.setText("{:.3f}".format(zz))
+    def updatePanelTranslation(self, panelGui, dagPath):
+        """Sets the panel translation in internal units (probably cm)."""
+
+        objectXform = om.MFnTransform(dagPath)
+        translation = objectXform.getTranslation(om.MSpace.kTransform)
+
+        xx = om.MDistance.internalToUI(translation.x)
+        panelGui.xEdit.setText("{:.3f}".format(xx))
+
+        yy = om.MDistance.internalToUI(translation.y)
+        panelGui.yEdit.setText("{:.3f}".format(yy))
+
+        zz = om.MDistance.internalToUI(translation.z)
+        panelGui.zEdit.setText("{:.3f}".format(zz))
 
     def setRotation(self, dagPath, index, *args, **kwargs):
         nodeName = dagPath.partialPathName()
@@ -348,10 +324,7 @@ class MannequinToolPanel():
             z = float(panelGui.zEdit.text())
             cmds.setAttr("{0}.rotateZ".format(nodeName), z)
 
-        objectXform = om.MFnTransform(dagPath)
-        rotation = om.MEulerRotation()
-        objectXform.getRotation(rotation)
-        self.updatePanelRotation(panelGui, rotation.x, rotation.y, rotation.z)
+        self.updatePanelRotation(panelGui, dagPath)
 
     def setTranslation(self, dagPath, index, *args, **kwargs):
         nodeName = dagPath.partialPathName()
@@ -370,12 +343,7 @@ class MannequinToolPanel():
             z = float(panelGui.zEdit.text())
             cmds.setAttr("{0}.translateZ".format(nodeName), z)
 
-        objectXform = om.MFnTransform(dagPath)
-        translation = objectXform.getTranslation(om.MSpace.kTransform)
-        self.updatePanelTranslation(panelGui,
-                                    translation.x,
-                                    translation.y,
-                                    translation.z)
+        self.updatePanelTranslation(panelGui, dagPath)
 
     def search(self, text):
         for name in self.panels:
@@ -426,18 +394,20 @@ class MannequinToolPanel():
                               edit=True,
                               sbp=("down", y - scrollHeight + height + margin))
 
+
 # Singleton object, global state.
 mannequinToolPanel = MannequinToolPanel()
 
 
 def setupMannequinUI():
+    """Sets up the side panel UI for the Mannequin plugin."""
     currentContext = cmds.currentCtx()
     influenceObjectsStr = cmds.mannequinContext(currentContext,
                                                  q=True,
                                                  io=True)
     ioTokens = influenceObjectsStr.split(" ")
     ioDagPaths = ioTokens[::2]
-    ioPresentations = ioTokens[1::2]
+    ioAvailableStyles = ioTokens[1::2]
 
     mannequinDockPtr = ui.MQtUtil.findLayout("mannequinPaletteDock")
     mannequinDock = wrapInstance(long(mannequinDockPtr), QWidget)
@@ -468,12 +438,12 @@ def setupMannequinUI():
         dependNode = om.MObject()
         selList.getDependNode(i, dependNode)
 
-        presentation = ioPresentations[i]
+        styles = ioAvailableStyles[i]
 
-        joints.append((dagPath, dependNode, presentation))
+        joints.append(JointInfo(dagPath, dependNode, styles))
 
     # Alphabetize joints by full DAG path; should sort slightly better.
-    joints = sorted(joints, key=lambda j: j[0].fullPathName())
+    joints = sorted(joints, key=lambda j: j.dagPath.fullPathName())
 
     prefixTrim = commonPrefix(joints)
     mannequinToolPanel.reset(mannequinLayout,
@@ -491,10 +461,15 @@ def organizeJoints(joints):
     """Applies a heuristic for organizing joints for display.
 
     The heuristic looks for occurences of "left", "right", "l", and "r" in the
-    joint names for forming left-right pairs of joints.
+    joint names for forming left-right pairs of joints. It uses Maya joint
+    labelling or body part names to determine how the joint displays should be
+    organized.
 
-    It uses Maya joint labelling or body part names to determine how the joint
-    displays should be organized.
+    :param joints: the unorganized JointInfos
+    :type joints: list[JointInfo]
+    :returns: a list of organized JointInfo groups; each group has at most
+              two JointInfos
+    :rtype: list[list[JointInfo]]
     """
     def stripName(n):
         n = n.lower()
@@ -519,7 +494,8 @@ def organizeJoints(joints):
         return count
 
     # Combine joints with similar names.
-    strippedJointNames = [stripName(x[0].partialPathName()) for x in joints]
+    strippedJointNames = [stripName(x.dagPath.partialPathName())
+                          for x in joints]
     jointGroups = OrderedDict()
     for i in range(len(strippedJointNames)):
         strippedName = strippedJointNames[i]
@@ -540,16 +516,21 @@ def organizeJoints(joints):
             jointPairs += [[x] for x in group]
             continue
 
-        # If group doesn't have matching presentation, then can't double up.
-        if group[0][2] != group[1][2]:
+        """:type: JointInfo"""
+        joint0 = group[0]
+        """:type: JointInfo"""
+        joint1 = group[1]
+
+        # If group doesn't have matching presentation style, then can't match.
+        if joint0.availableStyles != joint1.availableStyles:
             jointPairs += [[x] for x in group]
             continue
 
         # Determine if the group is a true left-right pair using Maya's
         # joint labels. If possible, insert a left-right double panel.
         # side: 0=center, 1=left, 2=right, 3=none
-        dependNode0 = om.MFnDependencyNode(group[0][1])
-        dependNode1 = om.MFnDependencyNode(group[1][1])
+        dependNode0 = om.MFnDependencyNode(joint0.dependNode)
+        dependNode1 = om.MFnDependencyNode(joint1.dependNode)
         attr0 = dependNode0.attribute("side")
         attr1 = dependNode1.attribute("side")
         plug0 = dependNode0.findPlug(attr0, True)
@@ -557,24 +538,24 @@ def organizeJoints(joints):
         side0 = plug0.asInt()
         side1 = plug1.asInt()
         if side0 == 1 and side1 == 2:  # left, right
-            jointPairs.append([group[0], group[1]])
+            jointPairs.append([joint0, joint1])
             continue
         elif side0 == 2 and side1 == 1:  # right, left
-            jointPairs.append([group[1], group[0]])
+            jointPairs.append([joint1, joint0])
             continue
 
         # If joint labels are not conclusive, then try to use a heuristic
         # based on the joint names.
-        lfHeuristic0 = leftHeuristic(group[0][0].partialPathName())
-        lfHeuristic1 = leftHeuristic(group[1][0].partialPathName())
-        rtHeuristic0 = rightHeuristic(group[0][0].partialPathName())
-        rtHeuristic1 = rightHeuristic(group[1][0].partialPathName())
+        lfHeuristic0 = leftHeuristic(joint0.dagPath.partialPathName())
+        lfHeuristic1 = leftHeuristic(joint1.dagPath.partialPathName())
+        rtHeuristic0 = rightHeuristic(joint0.dagPath.partialPathName())
+        rtHeuristic1 = rightHeuristic(joint1.dagPath.partialPathName())
 
         if lfHeuristic0 >= lfHeuristic1 and rtHeuristic1 >= rtHeuristic0:
-            jointPairs.append([group[0], group[1]])
+            jointPairs.append([joint0, joint1])
             continue
         elif lfHeuristic0 <= lfHeuristic1 and rtHeuristic1 <= rtHeuristic0:
-            jointPairs.append([group[1], group[0]])
+            jointPairs.append([joint1, joint0])
             continue
 
         # And if that doesn't work, then we'll begrudgingly just add the
@@ -586,24 +567,41 @@ def organizeJoints(joints):
 
 def commonPrefix(joints):
     """Determines whether the list of joints has a common prefix.
-    Returns the length of the prefix, or 0 if there is none.
+
+    :param joints: the unorganized JointInfos
+    :type joints: list[JointInfo]
+    :returns: the length of any prefix shared by the JointInfos,
+              or 0 if there is no such prefix
+    :rtype: int
     """
-    jointNames = [x[0].partialPathName() for x in joints]
+    jointNames = [x.dagPath.partialPathName() for x in joints]
     prefix = os.path.commonprefix(jointNames)
     return len(prefix)
 
 
-def mannequinSelectionChanged(dagString, presentation):
+def mannequinSelectionChanged(dagString, style):
+    """Callback from the C++ MannequinContext when its selection changes.
+
+    This callback may be the result of a Python-initiated selection change.
+
+    :param dagString: the full DAG path of the new selection, or the empty
+                      string if there is no selection
+    :type dagString: str
+    :param style: either the string "r" or "t" indicating the current
+                  presentation style for the selection
+    :type style: str
+    """
     try:
         selList = om.MSelectionList()
         selList.add(dagString)
         dagPath = om.MDagPath()
         selList.getDagPath(0, dagPath)
         mannequinToolPanel.select(dagPath)
-        print(presentation)
+        print(style)
     except:
         mannequinToolPanel.select(None)
 
 
 def tearDownMannequinUI():
+    """Remove all of the callbacks and event filters for the UI."""
     mannequinToolPanel.reset()
