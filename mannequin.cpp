@@ -18,8 +18,6 @@
 #include <maya/M3dView.h>
 #include <maya/MItMeshPolygon.h>
 
-#define TERMINAL_JOINTS_ROTATE
-
 constexpr double MannequinContext::MANIP_DEFAULT_SCALE;
 constexpr double MannequinContext::MANIP_ADJUSTMENT;
 

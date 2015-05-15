@@ -79,14 +79,27 @@ void MannequinManipulator::postConstructor() {
 }
 
 MStatus MannequinManipulator::doMove(M3dView& view, bool& refresh) {
-  MPoint linePoint;
-  MVector lineDirection;
-  mouseRayWorld(linePoint, lineDirection);
-
   do {
     if (!_ctx) {
       break;
     }
+
+    // If the mouse is near the border (e.g. within 4px), don't highlight.
+    // This works around some bugs where a section can remain highlighted!
+    int portWidth = view.portWidth();
+    int portHeight = view.portHeight();
+    short screenX, screenY;
+    mousePosition(screenX, screenY);
+
+    if (screenX < 4 || screenY < 4 ||
+        screenX >= portWidth - 4 || screenY >= portHeight - 4) {
+      break;
+    }
+
+    // Begin the actual hit-testing routine.
+    MPoint linePoint;
+    MVector lineDirection;
+    mouseRayWorld(linePoint, lineDirection);
 
     MFnMesh mesh(_ctx->meshDagPath());
     MFnSkinCluster skin(_ctx->skinObject());
