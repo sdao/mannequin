@@ -427,6 +427,9 @@ def setupMannequinUI():
 
         joints.append((dagPath, dependNode, presentation))
 
+    # Alphabetize joints by full DAG path; should sort slightly better.
+    joints = sorted(joints, key=lambda j: j[0].fullPathName())
+
     prefixTrim = commonPrefix(joints)
     mannequinToolPanel.reset(mannequinLayout,
                              gui,

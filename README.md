@@ -1,6 +1,6 @@
 Mannequin
 ==========
-![Mannequin icon](icons/mannequin_32.png)
+![Mannequin icon](icons/mannequin_maya2016.png)
 
 Mannequin is a plugin for Maya that allows you to animate a character rig
 by interacting directly with the character mesh. Simply hover over the mesh,
