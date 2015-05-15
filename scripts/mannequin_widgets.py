@@ -1,6 +1,5 @@
 from maya import cmds
 from maya import OpenMaya as om
-from maya import OpenMayaUI as ui
 
 from PySide.QtCore import *
 from PySide.QtGui import *
@@ -27,7 +26,8 @@ class DragWidget(QWidget):
         self.beginChange()
 
     def mouseMoveEvent(self, event):
-        # Since we're not mouse tracking, this happens only when a mouse button # is down.
+        # Since we're not mouse tracking, this happens only when a mouse button
+        # is down.
         if self.originalMouseX is None:
             return
 
@@ -103,6 +103,7 @@ class DragRotationWidget(DragWidget):
         self.originalRotation = None
         self.newRotation = None
 
+
 class DragTranslationWidget(DragWidget):
     def __init__(self, label, dagPath, index):
         super(DragTranslationWidget, self).__init__(label, 1.0 / 20.0)
@@ -138,7 +139,7 @@ class DragTranslationWidget(DragWidget):
     def finalizeChange(self):
         objectXform = om.MFnTransform(self.dagPath)
         objectXform.setTranslation(self.originalTranslation,
-            om.MSpace.kTransform)
+                                   om.MSpace.kTransform)
 
         # Argggh, have to convert between cms and display distance units.
         if not self.newTranslation.isEquivalent(self.originalTranslation):

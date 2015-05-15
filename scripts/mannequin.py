@@ -76,16 +76,28 @@ class FocusEventFilter(QObject):
 
         return QWidget.eventFilter(self, widget, event)
 
-    def selectNode(self, nodeName):
+    @staticmethod
+    def selectNode(nodeName):
         currentContext = cmds.currentCtx()
         cmds.mannequinContext(currentContext, e=True, sel=nodeName)
+
 
 class MannequinToolPanel():
     def __init__(self):
         self.loader = QUiLoader()
         self.resizeEventFilter = ResizeEventFilter()
         self.focusEventFilter = FocusEventFilter()
-        self.reset()
+
+        self.callbacks = []
+        self.parent = None
+        self.gui = None
+        self.searchField = None
+        self.scroll = None
+        self.prefixTrim = 0
+        self.dagPaths = {}
+        self.panels = {}
+        self.updateQueue = []
+        self.validator = None
 
     def reset(self,
               parent=None,
@@ -94,12 +106,8 @@ class MannequinToolPanel():
               scroll=None,
               prefixTrim=0):
         # Cleanup callbacks.
-        try:
-            for x in self.callbacks:
-                om.MNodeMessage.removeCallback(x)
-        except AttributeError:
-            pass
-
+        for x in self.callbacks:
+            om.MNodeMessage.removeCallback(x)
         self.callbacks = []
 
         # Reset everything.
@@ -138,11 +146,11 @@ class MannequinToolPanel():
                 self.scrollEnsureVisible(y, height)
 
     def layoutJointDisplay(self, jointDisplay):
-        file = QFile(os.path.join(os.path.dirname(__file__),
+        uiFile = QFile(os.path.join(os.path.dirname(__file__),
                                   "panel_double.ui"))
-        file.open(QFile.ReadOnly)
-        container = self.loader.load(file)
-        file.close()
+        uiFile.open(QFile.ReadOnly)
+        container = self.loader.load(uiFile)
+        uiFile.close()
 
         # Add child panels.
         # All joints in display should match.
@@ -155,11 +163,11 @@ class MannequinToolPanel():
         self.gui.layout().addWidget(container)
 
     def insertJointDisplayPanel(self, jointInfo, style, container):
-        file = QFile(os.path.join(os.path.dirname(__file__),
+        uiFile = QFile(os.path.join(os.path.dirname(__file__),
                                   "panel_single.ui"))
-        file.open(QFile.ReadOnly)
-        panelGui = self.loader.load(file)
-        file.close()
+        uiFile.open(QFile.ReadOnly)
+        panelGui = self.loader.load(uiFile)
+        uiFile.close()
 
         # Register panels according to DAG path.
         dagPath = jointInfo.dagPath
@@ -246,7 +254,7 @@ class MannequinToolPanel():
         self.relayout()
         self.gui.show()
 
-    def dirtyPlugCallback(self, node, plug, *args, **kwargs):
+    def dirtyPlugCallback(self, node, plug, clientData):
         nodeName, attrName = plug.name().split(".")
 
         if nodeName not in self.panels:
@@ -276,7 +284,8 @@ class MannequinToolPanel():
 
         self.updateQueue = []
 
-    def updatePanelRotation(self, panelGui, dagPath):
+    @staticmethod
+    def updatePanelRotation(panelGui, dagPath):
         """Sets the panel rotation in internal units (probably radians)."""
 
         objectXform = om.MFnTransform(dagPath)
@@ -292,7 +301,8 @@ class MannequinToolPanel():
         zz = om.MAngle.internalToUI(rotation.z)
         panelGui.zEdit.setText("{:.3f}".format(zz))
 
-    def updatePanelTranslation(self, panelGui, dagPath):
+    @staticmethod
+    def updatePanelTranslation(panelGui, dagPath):
         """Sets the panel translation in internal units (probably cm)."""
 
         objectXform = om.MFnTransform(dagPath)
@@ -307,7 +317,7 @@ class MannequinToolPanel():
         zz = om.MDistance.internalToUI(translation.z)
         panelGui.zEdit.setText("{:.3f}".format(zz))
 
-    def setRotation(self, dagPath, index, *args, **kwargs):
+    def setRotation(self, dagPath, index):
         nodeName = dagPath.partialPathName()
         panelGui = self.panels[nodeName]
 
@@ -326,7 +336,7 @@ class MannequinToolPanel():
 
         self.updatePanelRotation(panelGui, dagPath)
 
-    def setTranslation(self, dagPath, index, *args, **kwargs):
+    def setTranslation(self, dagPath, index):
         nodeName = dagPath.partialPathName()
         panelGui = self.panels[nodeName]
 
@@ -362,7 +372,8 @@ class MannequinToolPanel():
         self.parent.setMinimumHeight(self.gui.sizeHint().height())
         self.parent.setMaximumHeight(self.gui.sizeHint().height())
 
-    def scrollEnsureVisible(self, y, height, margin=50):
+    @staticmethod
+    def scrollEnsureVisible(y, height, margin=50):
         scrollVert, _ = cmds.scrollLayout("mannequinScrollLayout",
                                           query=True,
                                           sav=True)
@@ -403,8 +414,8 @@ def setupMannequinUI():
     """Sets up the side panel UI for the Mannequin plugin."""
     currentContext = cmds.currentCtx()
     influenceObjectsStr = cmds.mannequinContext(currentContext,
-                                                 q=True,
-                                                 io=True)
+                                                q=True,
+                                                io=True)
     ioTokens = influenceObjectsStr.split(" ")
     ioDagPaths = ioTokens[::2]
     ioAvailableStyles = ioTokens[1::2]
@@ -421,10 +432,10 @@ def setupMannequinUI():
     mannequinSearchPtr = ui.MQtUtil.findControl("mannequinSearchField")
     mannequinSearch = wrapInstance(long(mannequinSearchPtr), QLineEdit)
 
-    file = QFile(os.path.join(os.path.dirname(__file__), "mannequin.ui"))
-    file.open(QFile.ReadOnly)
-    gui = mannequinToolPanel.loader.load(file, parentWidget=mannequinLayout)
-    file.close()
+    uiFile = QFile(os.path.join(os.path.dirname(__file__), "mannequin.ui"))
+    uiFile.open(QFile.ReadOnly)
+    gui = mannequinToolPanel.loader.load(uiFile, parentWidget=mannequinLayout)
+    uiFile.close()
 
     selList = om.MSelectionList()
     for obj in ioDagPaths:
@@ -456,6 +467,7 @@ def setupMannequinUI():
     for jointDisplay in jointDisplays:
         mannequinToolPanel.layoutJointDisplay(jointDisplay)
     mannequinToolPanel.finishLayout()
+
 
 def organizeJoints(joints):
     """Applies a heuristic for organizing joints for display.
