@@ -595,7 +595,7 @@ MStatus MannequinContextCommand::doQueryFlags() {
       int style = _mannequinContext->presentationStyleForJointDagPath(dagPath);
 
       result += dagPath.fullPathName();
-      result += " !";
+      result += " ";
       result += (style & JointPresentationStyle::ROTATE) ? "r" : "";
       result += (style & JointPresentationStyle::TRANSLATE) ? "t" : "";
     }

@@ -105,7 +105,7 @@ QGroupBox:hover:!flat {
        </spacer>
       </item>
       <item row="0" column="2">
-       <widget class="QLineEdit" name="rotateXEdit">
+       <widget class="QLineEdit" name="xEdit">
         <property name="enabled">
          <bool>true</bool>
         </property>
@@ -124,7 +124,7 @@ QGroupBox:hover:!flat {
        </widget>
       </item>
       <item row="2" column="2">
-       <widget class="QLineEdit" name="rotateZEdit">
+       <widget class="QLineEdit" name="zEdit">
         <property name="enabled">
          <bool>true</bool>
         </property>
@@ -143,7 +143,7 @@ QGroupBox:hover:!flat {
        </widget>
       </item>
       <item row="1" column="2">
-       <widget class="QLineEdit" name="rotateYEdit">
+       <widget class="QLineEdit" name="yEdit">
         <property name="enabled">
          <bool>true</bool>
         </property>
@@ -175,10 +175,10 @@ QGroupBox:hover:!flat {
        </spacer>
       </item>
       <item row="0" column="1">
-       <widget class="QWidget" name="rotateXLabel" native="true">
+       <widget class="QWidget" name="xLabel" native="true">
         <property name="minimumSize">
          <size>
-          <width>55</width>
+          <width>60</width>
           <height>0</height>
          </size>
         </property>
@@ -190,10 +190,10 @@ QGroupBox:hover:!flat {
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QWidget" name="rotateYLabel" native="true">
+       <widget class="QWidget" name="yLabel" native="true">
         <property name="minimumSize">
          <size>
-          <width>55</width>
+          <width>60</width>
           <height>0</height>
          </size>
         </property>
@@ -205,10 +205,10 @@ QGroupBox:hover:!flat {
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QWidget" name="rotateZLabel" native="true">
+       <widget class="QWidget" name="zLabel" native="true">
         <property name="minimumSize">
          <size>
-          <width>55</width>
+          <width>60</width>
           <height>0</height>
          </size>
         </property>
@@ -226,9 +226,9 @@ QGroupBox:hover:!flat {
  </widget>
  <tabstops>
   <tabstop>groupBox</tabstop>
-  <tabstop>rotateXEdit</tabstop>
-  <tabstop>rotateYEdit</tabstop>
-  <tabstop>rotateZEdit</tabstop>
+  <tabstop>xEdit</tabstop>
+  <tabstop>yEdit</tabstop>
+  <tabstop>zEdit</tabstop>
  </tabstops>
  <resources/>
  <connections/>
