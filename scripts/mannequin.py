@@ -88,23 +88,42 @@ class MannequinToolPanel():
         self.resizeEventFilter = ResizeEventFilter()
         self.focusEventFilter = FocusEventFilter()
 
+        """:type: list[om.MCallbackId]"""
         self.callbacks = []
+        """:type: QWidget"""
         self.parent = None
+        """:type: QWidget"""
         self.gui = None
+        """:type: QLineEdit"""
         self.searchField = None
-        self.scroll = None
+        """:type: int"""
         self.prefixTrim = 0
+        """:type: dict[str, om.MDagPath]"""
         self.dagPaths = {}
+        """:type: dict[str, QWidget]"""
         self.panels = {}
+        """:type: list[(str, str)]"""
         self.updateQueue = []
+        """:type: QDoubleValidator"""
         self.validator = None
 
     def reset(self,
               parent=None,
               gui=None,
               searchField=None,
-              scroll=None,
               prefixTrim=0):
+        """Configures the tool panel object for the given UI widgets.
+
+        :param parent: the closest ancestor widget that was created by Maya
+        :type parent: QWidget
+        :param gui: the custom widget created in Qt that serves as the panel UI
+        :type gui: QWidget
+        :param searchField: the text box created in Qt that does type-to-search
+        :type searchField: QLineEdit
+        :param prefixTrim: the number of characters to trim from panel titles
+        :type prefixTrim: int
+        """
+
         # Cleanup callbacks.
         for x in self.callbacks:
             om.MNodeMessage.removeCallback(x)
@@ -114,7 +133,6 @@ class MannequinToolPanel():
         self.parent = parent
         self.gui = gui
         self.searchField = searchField
-        self.scroll = scroll
         self.prefixTrim = prefixTrim
         self.dagPaths = {}
         self.panels = {}
@@ -131,6 +149,12 @@ class MannequinToolPanel():
             self.validator.setDecimals(3)
 
     def select(self, dagPath):
+        """ Highlights the panel for the given DAG path and ensures it's visible.
+
+        :param dagPath: the DAG path that was selected
+        :type dagPath: om.MDagPath
+        """
+
         if dagPath is None:
             selectedPanel = ""
         else:
@@ -145,9 +169,17 @@ class MannequinToolPanel():
                 height = self.panels[panel].parentWidget().height()
                 self.scrollEnsureVisible(y, height)
 
-    def layoutJointDisplay(self, jointDisplay):
+    def layoutJointDisplayRow(self, jointDisplay):
+        """Creates a row in the Mannequin panel and inserts all the
+        constituent panels.
+
+        :param jointDisplay: a group of JointInfos that should be displayed
+                             in the same row
+        :type jointDisplay: list[JointInfo]
+        """
+
         uiFile = QFile(os.path.join(os.path.dirname(__file__),
-                                  "panel_double.ui"))
+                                    "panel_double.ui"))
         uiFile.open(QFile.ReadOnly)
         container = self.loader.load(uiFile)
         uiFile.close()
@@ -163,8 +195,19 @@ class MannequinToolPanel():
         self.gui.layout().addWidget(container)
 
     def insertJointDisplayPanel(self, jointInfo, style, container):
+        """Creates a constituent panel within a Mannequin display row.
+
+        :param jointInfo: the joint that the panel will control
+        :type jointInfo: JointInfo
+        :param style: the presentation style (rotate, translate, etc.) for
+                      the panel
+        :type style: str
+        :param container: the row container that houses this constituent panel
+        :type container: QWidget
+        """
+
         uiFile = QFile(os.path.join(os.path.dirname(__file__),
-                                  "panel_single.ui"))
+                                    "panel_single.ui"))
         uiFile.open(QFile.ReadOnly)
         panelGui = self.loader.load(uiFile)
         uiFile.close()
@@ -242,6 +285,10 @@ class MannequinToolPanel():
         container.layout().addWidget(panelGui)
 
     def finishLayout(self):
+        """This must be called to prepare the UI after all of the display rows
+        and panels have been inserted.
+        """
+
         # Setup resize event filter.
         self.resizeEventFilter.install(self.parent, self.gui)
 
@@ -255,6 +302,16 @@ class MannequinToolPanel():
         self.gui.show()
 
     def dirtyPlugCallback(self, node, plug, clientData):
+        """Callback function for when a joint node's plugs have changed.
+
+        :param node: the node whose plugs have changed
+        :type node: om.MObject
+        :param plug: the plug that has changed on the node
+        :type plug: om.MPlug
+        :param clientData: extra client data passed from the callback
+                           constructor; unused at this time
+        """
+
         nodeName, attrName = plug.name().split(".")
 
         if nodeName not in self.panels:
@@ -270,6 +327,13 @@ class MannequinToolPanel():
                 cmds.evalDeferred(self.deferredUpdate, low=True)
 
     def deferredUpdate(self):
+        """Helper function for updating the panel UI after the dirty-plug
+        callback.
+
+        This is necessary because the plug's data might not be available yet
+        for querying until the next deferred update occurs.
+        """
+
         for nodeName, style in self.updateQueue:
             if nodeName not in self.dagPaths:
                 continue
@@ -286,7 +350,14 @@ class MannequinToolPanel():
 
     @staticmethod
     def updatePanelRotation(panelGui, dagPath):
-        """Sets the panel rotation in internal units (probably radians)."""
+        """Sets the panel rotation in internal units (probably radians).
+
+        :param panelGui: the panel widget whose rotation data needs updating
+        :type panelGui: QWidget
+        :param dagPath: the DAG path of the transform to get data from
+        :type dagPath: om.MDagPath
+        :return:
+        """
 
         objectXform = om.MFnTransform(dagPath)
         rotation = om.MEulerRotation()
@@ -303,7 +374,14 @@ class MannequinToolPanel():
 
     @staticmethod
     def updatePanelTranslation(panelGui, dagPath):
-        """Sets the panel translation in internal units (probably cm)."""
+        """Sets the panel translation in internal units (probably cm).
+
+        :param panelGui: the panel widget whose translation data needs updating
+        :type panelGui: QWidget
+        :param dagPath: the DAG path of the transform to get data from
+        :type dagPath: om.MDagPath
+        :return:
+        """
 
         objectXform = om.MFnTransform(dagPath)
         translation = objectXform.getTranslation(om.MSpace.kTransform)
@@ -318,6 +396,15 @@ class MannequinToolPanel():
         panelGui.zEdit.setText("{:.3f}".format(zz))
 
     def setRotation(self, dagPath, index):
+        """Updates a joint's rotation from its corresponding panel.
+
+        :param dagPath: the DAG path to update
+        :type dagPath: om.MDagPath
+        :param index: the component of the object's rotation that needs
+                      updating, e.g. 0=X, 1=Y, 2=Z
+        :type index: int
+        """
+
         nodeName = dagPath.partialPathName()
         panelGui = self.panels[nodeName]
 
@@ -337,6 +424,15 @@ class MannequinToolPanel():
         self.updatePanelRotation(panelGui, dagPath)
 
     def setTranslation(self, dagPath, index):
+        """Updates a joint's translation from its corresponding panel.
+
+        :param dagPath: the DAG path to update
+        :type dagPath: om.MDagPath
+        :param index: the component of the object's translation that needs
+                      updating, e.g. 0=X, 1=Y, 2=Z
+        :type index: int
+        """
+
         nodeName = dagPath.partialPathName()
         panelGui = self.panels[nodeName]
 
@@ -356,6 +452,12 @@ class MannequinToolPanel():
         self.updatePanelTranslation(panelGui, dagPath)
 
     def search(self, text):
+        """Performs type-to-search using the given textual substring.
+
+        :param text: the substring to filter joints by
+        :type text: str
+        """
+
         for name in self.panels:
             if text.lower() in name.lower():
                 self.panels[name].show()
@@ -367,6 +469,10 @@ class MannequinToolPanel():
         QTimer.singleShot(0, self.relayout)
 
     def relayout(self):
+        """This function needs to be called whenever joint display panels are
+        hidden or shown inside the Mannequin panel.
+        """
+
         self.gui.setMinimumHeight(self.gui.sizeHint().height())
         self.gui.setMaximumHeight(self.gui.sizeHint().height())
         self.parent.setMinimumHeight(self.gui.sizeHint().height())
@@ -374,6 +480,17 @@ class MannequinToolPanel():
 
     @staticmethod
     def scrollEnsureVisible(y, height, margin=50):
+        """Scrolls the Mannequin panel, ensuring that the given region is shown.
+
+        :param y: the top of the region, measured from the top of the scroller
+        :type y: int
+        :param height: the height of the region
+        :type height: int
+        :param margin: the margin to place around the region when scrolling;
+                       this will be ignored if there is not enough space
+        :type margin: int
+        """
+
         scrollVert, _ = cmds.scrollLayout("mannequinScrollLayout",
                                           query=True,
                                           sav=True)
@@ -412,6 +529,7 @@ mannequinToolPanel = MannequinToolPanel()
 
 def setupMannequinUI():
     """Sets up the side panel UI for the Mannequin plugin."""
+
     currentContext = cmds.currentCtx()
     influenceObjectsStr = cmds.mannequinContext(currentContext,
                                                 q=True,
@@ -423,8 +541,6 @@ def setupMannequinUI():
     mannequinDockPtr = ui.MQtUtil.findLayout("mannequinPaletteDock")
     mannequinDock = wrapInstance(long(mannequinDockPtr), QWidget)
     mannequinDock.setMinimumWidth(300)
-
-    mannequinScroll = mannequinDock.findChild(QScrollArea)
 
     mannequinLayoutPtr = ui.MQtUtil.findLayout("mannequinPaletteLayout")
     mannequinLayout = wrapInstance(long(mannequinLayoutPtr), QWidget)
@@ -460,12 +576,11 @@ def setupMannequinUI():
     mannequinToolPanel.reset(mannequinLayout,
                              gui,
                              mannequinSearch,
-                             mannequinScroll,
                              prefixTrim)
 
     jointDisplays = organizeJoints(joints)
     for jointDisplay in jointDisplays:
-        mannequinToolPanel.layoutJointDisplay(jointDisplay)
+        mannequinToolPanel.layoutJointDisplayRow(jointDisplay)
     mannequinToolPanel.finishLayout()
 
 
@@ -483,6 +598,7 @@ def organizeJoints(joints):
               two JointInfos
     :rtype: list[list[JointInfo]]
     """
+
     def stripName(n):
         n = n.lower()
         n = n.replace("left", "~")
@@ -603,6 +719,7 @@ def mannequinSelectionChanged(dagString, style):
                   presentation style for the selection
     :type style: str
     """
+
     try:
         selList = om.MSelectionList()
         selList.add(dagString)
@@ -616,4 +733,5 @@ def mannequinSelectionChanged(dagString, style):
 
 def tearDownMannequinUI():
     """Remove all of the callbacks and event filters for the UI."""
+
     mannequinToolPanel.reset()
