@@ -50,6 +50,32 @@ namespace Util {
     return false;
   }
 
+  inline bool rayPlaneIntersection(const MPoint& rayOrigin,
+                                   const MVector& rayDirection,
+                                   const MPoint& pointOnPlane,
+                                   const MVector& planeNormal,
+                                   MPoint* isectOut) {
+    MVector pointDiff = pointOnPlane - rayOrigin;
+    double num = pointDiff * planeNormal;
+    double denom = rayDirection * planeNormal;
+
+    if (fabs(denom) < 0.001f) {
+      return false;
+    }
+
+    double dist = num / denom;
+
+    if (dist < 0.001f) {
+      return false;
+    }
+
+    if (isectOut) {
+      *isectOut = rayOrigin + dist * rayDirection;
+    }
+
+    return true;
+  }
+
   inline float distanceToLine(const float lx1, const float ly1,
                               const float lx2, const float ly2,
                               const float x0, const float y0,

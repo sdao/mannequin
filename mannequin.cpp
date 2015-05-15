@@ -72,7 +72,7 @@ void MannequinContext::select(const MDagPath& dagPath) {
           moveManipObj);
 
       _moveManip->connectToDependNode(_selection.node());
-      _moveManip->setManipScale(manipAdjustedScale());
+      _moveManip->setManipScale(manipAdjustedScale() * 1.25f);
 
       addManipulator(moveManipObj);
     }

@@ -49,7 +49,17 @@ private:
   MVector _z;
   MPoint _origin;
 
-  MPoint _originalTranslate;
-  short _originalMouseX;
-  short _originalMouseY;
+  MVector _xInParentSpace;
+  MVector _yInParentSpace;
+  MVector _zInParentSpace;
+
+  bool _opValid;
+  short _opAxisIndex;
+  MPoint _opOrigin;
+  MVector _opAxis;
+  MVector _opPlaneNormal;
+  MPoint _opHitBegin;
+  MPoint _opHitCurrent;
+  MVector _opDiffProj;
+  MPoint _opValueBegin;
 };

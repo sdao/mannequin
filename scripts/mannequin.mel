@@ -100,13 +100,19 @@ global proc mannequinPaletteBegin() {
     python "setupMannequinUI()";
   }
 
-  evalDeferred "dockControl -e -visible true -raise mannequinPaletteDock";
+  evalDeferred "mannequinRaiseDock" -low;
 }
 
 global proc mannequinPaletteFinish() {
   python "tearDownMannequinUI()";
   if (`dockControl -ex mannequinPaletteDock`) {
     deleteUI mannequinPaletteDock;
+  }
+}
+
+global proc mannequinRaiseDock() {
+  if (`dockControl -ex mannequinPaletteDock`) {
+    dockControl -e -visible true -raise mannequinPaletteDock;
   }
 }
 

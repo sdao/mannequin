@@ -61,6 +61,7 @@ void MannequinMoveManipulator::draw(M3dView &view,
   }
 
   recalcMetrics();
+
   float size = _manipScale * MFnManip3D::globalSize();
   float handleSize = MFnManip3D::handleSize() / 100.0f; // Probably on [0, 100].
   float handleHeight = size * handleSize * 0.5f;
@@ -150,24 +151,128 @@ void MannequinMoveManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
   drawManager.cone(_origin + (_z * handleOfs), _z, handleRadius, handleHeight,
     true);
   drawManager.endDrawable();
+
+#ifdef MANIPULATOR_TEST
+  drawManager.beginDrawable();
+  drawManager.setColor(MColor(1.0, 0.0, 1.0));
+  drawManager.line(_opHitBegin, _opHitCurrent);
+  drawManager.line(_opHitBegin, _opHitBegin + _opDiffProj);
+  drawManager.endDrawable();
+#endif
 };
 
 MStatus MannequinMoveManipulator::doPress(M3dView& view) {
-  getPointValue(_translateIndex, false, _originalTranslate);
-  mousePosition(_originalMouseX, _originalMouseY);
+  getPointValue(_translateIndex, false, _opValueBegin);
+
+  GLuint activeAxis;
+  glActiveName(activeAxis);
+
+  if (activeAxis == _glPickableItem + 0) {
+    _opAxis = _x;
+    _opAxisIndex = 0;
+  } else if (activeAxis == _glPickableItem + 1) {
+    _opAxis = _y;
+    _opAxisIndex = 1;
+  } else if (activeAxis == _glPickableItem + 2) {
+    _opAxis = _z;
+    _opAxisIndex = 2;
+  } else {
+    _opAxis = MVector::zero;
+    _opValid = false;
+    return MS::kUnknownParameter;
+  }
+
+  _opOrigin = _origin;
+
+  // Determine the translation "plane"; it is orthogonal to the axis and faces
+  // the view as best as possible.
+  short originX, originY;
+  view.worldToView(_opOrigin, originX, originY);
+
+  MPoint rayNear;
+  MVector dirToOrigin;
+  view.viewToWorld(originX, originY, rayNear, dirToOrigin);
+
+  MVector dirInPlane = dirToOrigin ^ _opAxis;
+  _opPlaneNormal = dirInPlane ^ _opAxis;
+
+  // Determine where the current mouse ray hits the plane.
+  MPoint rayOrigin;
+  MVector rayDirection;
+  mouseRayWorld(rayOrigin, rayDirection);
+
+  MPoint isect;
+  bool didIsect = Util::rayPlaneIntersection(rayOrigin,
+                                             rayDirection,
+                                             _opOrigin,
+                                             _opPlaneNormal,
+                                             &isect);
+
+  if (!didIsect) {
+    _opValid = false;
+    return MS::kUnknownParameter;
+  }
+
+  _opHitBegin = isect;
+  _opValid = true;
+
+  // We need to calculate the handle directions in parent space. This is
+  // because the handle positions align with the child pivot rotation, so they
+  // DO NOT correspond to the child's X, Y, and Z-position, which are
+  // indicated in terms of the parent's coordinate space.
+  MMatrix parentInverse = _parentXform.asMatrixInverse();
+  _xInParentSpace = _x * parentInverse;
+  _yInParentSpace = _y * parentInverse;
+  _zInParentSpace = _z * parentInverse;
+
   return MS::kSuccess;
 }
 
 MStatus MannequinMoveManipulator::doDrag(M3dView& view) {
-  MPoint p(0, 0, 0);
-  setPointValue(_translateIndex, p);
-  std::cout << "Drag!\n";
+  if (!_opValid) {
+    return MS::kUnknownParameter;
+  }
+
+  MPoint rayOrigin;
+  MVector rayDirection;
+  mouseRayWorld(rayOrigin, rayDirection);
+
+  MPoint isect;
+  bool didIsect = Util::rayPlaneIntersection(rayOrigin,
+                                             rayDirection,
+                                             _opOrigin,
+                                             _opPlaneNormal,
+                                             &isect);
+
+  if (!didIsect) {
+    // Leave the point where it is. The user's probably gone past the horizon.
+    return MS::kSuccess;
+  }
+
+  _opHitCurrent = isect;
+  MVector diff = _opHitCurrent - _opHitBegin;
+
+  // Now let's project diff onto the axis!
+  MVector axisNormal = _opAxis.normal();
+  double ofs = (diff * axisNormal) / _opAxis.length();
+  _opDiffProj = (diff * axisNormal) * axisNormal;
+
+  MPoint newTranslate;
+  if (_opAxisIndex == 0) {
+    newTranslate = _opValueBegin + ofs * _xInParentSpace;
+  } else if (_opAxisIndex == 1) {
+    newTranslate = _opValueBegin + ofs * _yInParentSpace;
+  } else if (_opAxisIndex == 2) {
+    newTranslate = _opValueBegin + ofs * _zInParentSpace;
+  } else {
+    newTranslate = _opValueBegin;
+  }
+
+  setPointValue(_translateIndex, newTranslate);
   return MS::kSuccess;
 }
 
 MStatus MannequinMoveManipulator::doRelease(M3dView& view) {
-  setPointValue(_translateIndex, _originalTranslate);
-  std::cout << "Release!\n";
   return MS::kSuccess;
 }
 
@@ -183,9 +288,10 @@ void MannequinMoveManipulator::recalcMetrics() {
   MPoint translate;
   getPointValue(_translateIndex, false, translate);
 
-  _x = MVector::xAxis * _childXform.asMatrix();
-  _y = MVector::yAxis * _childXform.asMatrix();
-  _z = MVector::zAxis * _childXform.asMatrix();
+  MMatrix childMatrix = _childXform.asMatrix();
+  _x = (MVector::xAxis * childMatrix).normal();
+  _y = (MVector::yAxis * childMatrix).normal();
+  _z = (MVector::zAxis * childMatrix).normal();
   _origin = translate * _parentXform.asMatrix();
 }
 
