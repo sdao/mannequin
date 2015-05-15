@@ -6,15 +6,12 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 
 
-class DragRotationWidget(QWidget):
-    def __init__(self, label, dagPath, index):
-        super(DragRotationWidget, self).__init__()
+class DragWidget(QWidget):
+    def __init__(self, label, sensitivity):
+        super(DragWidget, self).__init__()
         self.label = label
-        self.dagPath = dagPath
-        self.index = index
+        self.sensitivity = sensitivity
         self.setCursor(Qt.SizeHorCursor)
-        self.originalRotation = None
-        self.newRotation = None
         self.originalMouseX = None
 
     def paintEvent(self, event):
@@ -25,13 +22,53 @@ class DragRotationWidget(QWidget):
                          Qt.AlignRight | Qt.AlignVCenter,
                          self.label)
 
+    def mousePressEvent(self, event):
+        self.originalMouseX = event.globalX()
+        self.beginChange()
+
     def mouseMoveEvent(self, event):
-        # Since we're not mouse tracking, this happens only when a
-        # mouse button is down.
-        if self.originalRotation is None or self.originalMouseX is None:
+        # Since we're not mouse tracking, this happens only when a mouse button # is down.
+        if self.originalMouseX is None:
             return
 
-        diff = float(event.globalX() - self.originalMouseX) / 60.0
+        diff = float(event.globalX() - self.originalMouseX) * self.sensitivity
+        self.change(diff)
+
+    def mouseReleaseEvent(self, event):
+        if self.originalMouseX is None:
+            return
+
+        self.originalMouseX = None
+        self.finalizeChange()
+
+    def beginChange(self):
+        pass
+
+    def change(self, diff):
+        pass
+
+    def finalizeChange(self):
+        pass
+
+
+class DragRotationWidget(DragWidget):
+    def __init__(self, label, dagPath, index):
+        super(DragRotationWidget, self).__init__(label, 1.0 / 60.0)
+        self.dagPath = dagPath
+        self.index = index
+        self.originalRotation = None
+        self.newRotation = None
+
+    def beginChange(self):
+        self.originalRotation = om.MEulerRotation()
+        objectXform = om.MFnTransform(self.dagPath)
+        objectXform.getRotation(self.originalRotation)
+        self.newRotation = self.originalRotation
+
+    def change(self, diff):
+        if self.originalRotation is None:
+            return
+
         if self.index == 0:
             diffRotation = om.MEulerRotation(diff, 0, 0)
         elif self.index == 1:
@@ -46,14 +83,7 @@ class DragRotationWidget(QWidget):
         objectXform = om.MFnTransform(self.dagPath)
         objectXform.setRotation(self.newRotation)
 
-    def mousePressEvent(self, event):
-        self.originalRotation = om.MEulerRotation()
-        self.originalMouseX = event.globalX()
-        objectXform = om.MFnTransform(self.dagPath)
-        objectXform.getRotation(self.originalRotation)
-        self.newRotation = self.originalRotation
-
-    def mouseReleaseEvent(self, event):
+    def finalizeChange(self):
         objectXform = om.MFnTransform(self.dagPath)
         objectXform.setRotation(self.originalRotation)
 
@@ -72,34 +102,25 @@ class DragRotationWidget(QWidget):
 
         self.originalRotation = None
         self.newRotation = None
-        self.originalMouseX = None
 
-class DragTranslationWidget(QWidget):
+class DragTranslationWidget(DragWidget):
     def __init__(self, label, dagPath, index):
-        super(DragTranslationWidget, self).__init__()
-        self.label = label
+        super(DragTranslationWidget, self).__init__(label, 1.0 / 20.0)
         self.dagPath = dagPath
         self.index = index
-        self.setCursor(Qt.SizeHorCursor)
         self.originalTranslation = None
         self.newTranslation = None
-        self.originalMouseX = None
 
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setClipRegion(event.region())
-        painter.setPen(QColor(240, 240, 240))
-        painter.drawText(self.contentsRect(),
-                         Qt.AlignRight | Qt.AlignVCenter,
-                         self.label)
+    def beginChange(self):
+        objectXform = om.MFnTransform(self.dagPath)
+        self.originalTranslation = \
+            objectXform.getTranslation(om.MSpace.kTransform)
+        self.newTranslation = self.originalTranslation
 
-    def mouseMoveEvent(self, event):
-        # Since we're not mouse tracking, this happens only when a
-        # mouse button is down.
-        if self.originalTranslation is None or self.originalMouseX is None:
+    def change(self, diff):
+        if self.originalTranslation is None:
             return
 
-        diff = float(event.globalX() - self.originalMouseX) / 20.0
         if self.index == 0:
             diffTranslation = om.MVector(diff, 0, 0)
         elif self.index == 1:
@@ -114,19 +135,12 @@ class DragTranslationWidget(QWidget):
         objectXform = om.MFnTransform(self.dagPath)
         objectXform.setTranslation(self.newTranslation, om.MSpace.kTransform)
 
-    def mousePressEvent(self, event):
-        objectXform = om.MFnTransform(self.dagPath)
-        self.originalTranslation = \
-            objectXform.getTranslation(om.MSpace.kTransform)
-        self.newTranslation = self.originalTranslation
-        self.originalMouseX = event.globalX()
-
-    def mouseReleaseEvent(self, event):
+    def finalizeChange(self):
         objectXform = om.MFnTransform(self.dagPath)
         objectXform.setTranslation(self.originalTranslation,
             om.MSpace.kTransform)
 
-        # Argggh, have to convert between degrees and radians.
+        # Argggh, have to convert between cms and display distance units.
         if not self.newTranslation.isEquivalent(self.originalTranslation):
             nodeName = self.dagPath.partialPathName()
             if self.index == 0:
@@ -141,4 +155,3 @@ class DragTranslationWidget(QWidget):
 
         self.originalTranslation = None
         self.newTranslation = None
-        self.originalMouseX = None
