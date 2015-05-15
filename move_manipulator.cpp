@@ -90,14 +90,14 @@ void MannequinMoveManipulator::draw(M3dView &view,
 	gGLFT->glEnd();
 
   colorAndName(view, _glPickableItem + 1, true,
-    selected[0] ? selectedColor() : yColor());
+    selected[1] ? selectedColor() : yColor());
 	gGLFT->glBegin(MGL_LINES);
 		gGLFT->glVertex3fv(origin);
 		gGLFT->glVertex3fv(y);
 	gGLFT->glEnd();
 
   colorAndName(view, _glPickableItem + 2, true,
-    selected[0] ? selectedColor() : zColor());
+    selected[2] ? selectedColor() : zColor());
 	gGLFT->glBegin(MGL_LINES);
 		gGLFT->glVertex3fv(origin);
 		gGLFT->glVertex3fv(z);
