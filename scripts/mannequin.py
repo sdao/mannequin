@@ -81,9 +81,14 @@ class MannequinToolPanel():
         self.loader = QUiLoader()
         self.resizeEventFilter = ResizeEventFilter()
         self.focusEventFilter = FocusEventFilter()
-        self.reset(None, None, None)
+        self.reset()
 
-    def reset(self, parent, gui, searchField, prefixTrim=0):
+    def reset(self,
+              parent=None,
+              gui=None,
+              searchField=None,
+              scroll=None,
+              prefixTrim=0):
         # Cleanup callbacks.
         try:
             for x in self.callbacks:
@@ -97,6 +102,7 @@ class MannequinToolPanel():
         self.parent = parent
         self.gui = gui
         self.searchField = searchField
+        self.scroll = scroll
         self.prefixTrim = prefixTrim
         self.dagPaths = {}
         self.panels = {}
@@ -119,7 +125,13 @@ class MannequinToolPanel():
             selectedPanel = dagPath.partialPathName()
 
         for panel in self.panels:
-            self.panels[panel].groupBox.setFlat(panel == selectedPanel)
+            isTheOne = panel == selectedPanel
+            self.panels[panel].groupBox.setFlat(isTheOne)
+
+            if isTheOne:
+                y = self.panels[panel].parentWidget().pos().y()
+                height = self.panels[panel].parentWidget().height()
+                self.scrollEnsureVisible(y, height)
 
     def layoutJointDisplay(self, jointDisplay):
         file = QFile(os.path.join(os.path.dirname(__file__),
@@ -382,6 +394,37 @@ class MannequinToolPanel():
         self.parent.setMinimumHeight(self.gui.sizeHint().height())
         self.parent.setMaximumHeight(self.gui.sizeHint().height())
 
+    def scrollEnsureVisible(self, y, height, margin=50):
+        scrollVert, _ = cmds.scrollLayout("mannequinScrollLayout",
+                                          query=True,
+                                          sav=True)
+        scrollHeight = cmds.scrollLayout("mannequinScrollLayout",
+                                         query=True,
+                                         sah=True)
+
+        visibleTop = scrollVert
+        visibleBottom = scrollVert + scrollHeight
+        belowFold = y >= visibleBottom
+        aboveFold = y + height <= visibleTop
+
+        # Adjust margin depending on the scroll area height.
+        margin = max(0, min(scrollHeight - height, margin))
+
+        # Scroll if required.
+        if aboveFold or height > scrollHeight:
+            cmds.scrollLayout("mannequinScrollLayout",
+                              edit=True,
+                              sbp=("up", 1000000))
+            cmds.scrollLayout("mannequinScrollLayout",
+                              edit=True,
+                              sbp=("down", y - margin))
+        elif belowFold:
+            cmds.scrollLayout("mannequinScrollLayout",
+                              edit=True,
+                              sbp=("up", 1000000))
+            cmds.scrollLayout("mannequinScrollLayout",
+                              edit=True,
+                              sbp=("down", y - scrollHeight + height + margin))
 
 # Singleton object, global state.
 mannequinToolPanel = MannequinToolPanel()
@@ -399,6 +442,8 @@ def setupMannequinUI():
     mannequinDockPtr = ui.MQtUtil.findLayout("mannequinPaletteDock")
     mannequinDock = wrapInstance(long(mannequinDockPtr), QWidget)
     mannequinDock.setMinimumWidth(300)
+
+    mannequinScroll = mannequinDock.findChild(QScrollArea)
 
     mannequinLayoutPtr = ui.MQtUtil.findLayout("mannequinPaletteLayout")
     mannequinLayout = wrapInstance(long(mannequinLayoutPtr), QWidget)
@@ -434,13 +479,13 @@ def setupMannequinUI():
     mannequinToolPanel.reset(mannequinLayout,
                              gui,
                              mannequinSearch,
+                             mannequinScroll,
                              prefixTrim)
 
     jointDisplays = organizeJoints(joints)
     for jointDisplay in jointDisplays:
         mannequinToolPanel.layoutJointDisplay(jointDisplay)
     mannequinToolPanel.finishLayout()
-
 
 def organizeJoints(joints):
     """Applies a heuristic for organizing joints for display.
@@ -484,8 +529,6 @@ def organizeJoints(joints):
             jointGroups[strippedName] = []
 
         jointGroups[strippedName].append(joint)
-
-    print(strippedJointNames)
 
     # Sort everything into pairs if possible.
     jointPairs = []
@@ -562,4 +605,4 @@ def mannequinSelectionChanged(dagString):
 
 
 def tearDownMannequinUI():
-    mannequinToolPanel.reset(None, None, None)
+    mannequinToolPanel.reset()
