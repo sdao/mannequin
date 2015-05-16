@@ -1,4 +1,5 @@
 from maya import cmds
+from maya import mel
 from maya.api import OpenMaya as om
 from maya.api import OpenMayaAnim as anim
 from maya.OpenMayaUI import MQtUtil
@@ -496,13 +497,13 @@ class MannequinToolPanel:
         # be in the UI units, which MEL expects.
         if index == 0 and panelGui.xEdit.isModified():
             x = float(panelGui.xEdit.text())
-            cmds.setAttr("{0}.rotateX".format(nodeName), x)
+            mel.eval("setAttr {0}.rotateX {1}".format(nodeName, x))
         elif index == 1 and panelGui.yEdit.isModified():
             y = float(panelGui.yEdit.text())
-            cmds.setAttr("{0}.rotateY".format(nodeName), y)
+            mel.eval("setAttr {0}.rotateY {1}".format(nodeName, y))
         elif index == 2 and panelGui.zEdit.isModified():
             z = float(panelGui.zEdit.text())
-            cmds.setAttr("{0}.rotateZ".format(nodeName), z)
+            mel.eval("setAttr {0}.rotateZ {1}".format(nodeName, z))
 
         self.updatePanelRotation(panelGui, dagPath)
 
@@ -524,13 +525,13 @@ class MannequinToolPanel:
         # be in the UI units, which MEL expects.
         if index == 0 and panelGui.xEdit.isModified():
             x = float(panelGui.xEdit.text())
-            cmds.setAttr("{0}.translateX".format(nodeName), x)
+            mel.eval("setAttr {0}.translateX {1}".format(nodeName, x))
         elif index == 1 and panelGui.yEdit.isModified():
             y = float(panelGui.yEdit.text())
-            cmds.setAttr("{0}.translateY".format(nodeName), y)
+            mel.eval("setAttr {0}.translateY {1}".format(nodeName, y))
         elif index == 2 and panelGui.zEdit.isModified():
             z = float(panelGui.zEdit.text())
-            cmds.setAttr("{0}.translateZ".format(nodeName), z)
+            mel.eval("setAttr {0}.translateZ {1}".format(nodeName, z))
 
         self.updatePanelTranslation(panelGui, dagPath)
 

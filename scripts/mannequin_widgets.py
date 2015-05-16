@@ -1,4 +1,5 @@
 from maya import cmds
+from maya import mel
 from maya.api import OpenMaya as om
 
 from PySide.QtCore import *
@@ -24,8 +25,7 @@ class DragWidget(QWidget):
 
     def mousePressEvent(self, event):
         self.originalMouseX = event.globalX()
-        self.autoKey = cmds.autoKeyframe(query=True, state=True)
-        cmds.autoKeyframe(state=False)
+        self.saveAutoKeyframe()
         self.beginChange()
 
     def mouseMoveEvent(self, event):
@@ -42,7 +42,7 @@ class DragWidget(QWidget):
             return
 
         self.originalMouseX = None
-        cmds.autoKeyframe(state=self.autoKey)
+        self.restoreAutoKeyframe()
         self.finalizeChange()
 
     def beginChange(self):
@@ -53,6 +53,14 @@ class DragWidget(QWidget):
 
     def finalizeChange(self):
         pass
+
+    def saveAutoKeyframe(self):
+        currentContext = cmds.currentCtx()
+        self.autoKey = cmds.mannequinContext(currentContext, e=True, sak=True)
+
+    def restoreAutoKeyframe(self):
+        currentContext = cmds.currentCtx()
+        cmds.mannequinContext(currentContext, e=True, rak=self.autoKey)
 
 
 class DragRotationWidget(DragWidget):
@@ -95,13 +103,13 @@ class DragRotationWidget(DragWidget):
             nodeName = self.dagPath.partialPathName()
             if self.index == 0:
                 x = om.MAngle.internalToUI(self.newRotation.x)
-                cmds.setAttr("{0}.rotateX".format(nodeName), x)
+                mel.eval("setAttr {0}.rotateX {1}".format(nodeName, x))
             elif self.index == 1:
                 y = om.MAngle.internalToUI(self.newRotation.y)
-                cmds.setAttr("{0}.rotateY".format(nodeName), y)
+                mel.eval("setAttr {0}.rotateY {1}".format(nodeName, y))
             elif self.index == 2:
                 z = om.MAngle.internalToUI(self.newRotation.z)
-                cmds.setAttr("{0}.rotateZ".format(nodeName), z)
+                mel.eval("setAttr {0}.rotateZ {1}".format(nodeName, z))
 
         self.originalRotation = None
         self.newRotation = None
@@ -148,13 +156,13 @@ class DragTranslationWidget(DragWidget):
             nodeName = self.dagPath.partialPathName()
             if self.index == 0:
                 x = om.MDistance.internalToUI(self.newTranslation.x)
-                cmds.setAttr("{0}.translateX".format(nodeName), x)
+                mel.eval("setAttr {0}.translateX {1}".format(nodeName, x))
             elif self.index == 1:
                 y = om.MDistance.internalToUI(self.newTranslation.y)
-                cmds.setAttr("{0}.translateY".format(nodeName), y)
+                mel.eval("setAttr {0}.translateY {1}".format(nodeName, y))
             elif self.index == 2:
                 z = om.MDistance.internalToUI(self.newTranslation.z)
-                cmds.setAttr("{0}.translateZ".format(nodeName), z)
+                mel.eval("setAttr {0}.translateZ {1}".format(nodeName, z))
 
         self.originalTranslation = None
         self.newTranslation = None
