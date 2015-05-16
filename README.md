@@ -17,13 +17,39 @@ worked on Maya 2015, so with some minor modifications, the current version
 should also compile for older Maya versions.
 
 You will want to create a Maya module for the plugin. The module should have an
-`icons` folder and a `scripts` folder like the repo. In addition, the compiled
-plugin (`.so`, `.bundle`, or `.mll`) needs to go in a `plug-ins` folder in the
-module.
+`icons` folder and a `scripts` folder copied from this repo. In addition, you
+need to compile the plugin and put the compiled file (`.so`, `.bundle`, or
+`.mll`) in a `plug-ins` folder in the module.
+
+You'll then need to create a module definition and place it in one of Maya's
+plug-in directories. (On OS X, one such directory is
+`/Users/Shared/Autodesk/modules/maya`.)
+
+Example module:
+```
+mannequin_module
+├── scripts
+|   ├── *.mel
+|   ├── *.py
+|   └── *.ui
+├── plug-ins
+|   └── mannequin.bundle
+└── icons
+    └── mannequin_maya2016.png
+```
+
+Example module definition (`mannequin.mod`):
+```
++ Mannequin 1.0 /Users/Steve/mannequin_module
+```
 
 The Makefile included with this project is copied from the Mac OS X version of
 the Maya Developer's Kit. To compile Linux or Windows versions, you will need
 to copy and modify the Makefile appropriate for your operating system.
+
+### Autodesk documentation links
+* [Building plug-ins](http://help.autodesk.com/cloudhelp/2016/ENU/Maya-SDK/files/Setting_up_your_build_environment.htm)
+* [Maya modules](http://help.autodesk.com/cloudhelp/2016/ENU/Maya-SDK/files/GUID-130A3F57-2A5D-4E56-B066-6B86F68EEA22.htm)
 
 Usage
 -----
