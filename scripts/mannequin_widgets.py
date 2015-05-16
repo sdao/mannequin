@@ -1,5 +1,5 @@
 from maya import cmds
-from maya import OpenMaya as om
+from maya.api import OpenMaya as om
 
 from PySide.QtCore import *
 from PySide.QtGui import *
@@ -64,9 +64,8 @@ class DragRotationWidget(DragWidget):
         self.newRotation = None
 
     def beginChange(self):
-        self.originalRotation = om.MEulerRotation()
         objectXform = om.MFnTransform(self.dagPath)
-        objectXform.getRotation(self.originalRotation)
+        self.originalRotation = objectXform.rotation()
         self.newRotation = self.originalRotation
 
     def change(self, diff):
@@ -85,11 +84,11 @@ class DragRotationWidget(DragWidget):
         self.newRotation = self.originalRotation + diffRotation
 
         objectXform = om.MFnTransform(self.dagPath)
-        objectXform.setRotation(self.newRotation)
+        objectXform.setRotation(self.newRotation, om.MSpace.kTransform)
 
     def finalizeChange(self):
         objectXform = om.MFnTransform(self.dagPath)
-        objectXform.setRotation(self.originalRotation)
+        objectXform.setRotation(self.originalRotation, om.MSpace.kTransform)
 
         # Argggh, have to convert between degrees and radians.
         if not self.newRotation.isEquivalent(self.originalRotation):
@@ -118,8 +117,7 @@ class DragTranslationWidget(DragWidget):
 
     def beginChange(self):
         objectXform = om.MFnTransform(self.dagPath)
-        self.originalTranslation = \
-            objectXform.getTranslation(om.MSpace.kTransform)
+        self.originalTranslation = objectXform.translation(om.MSpace.kTransform)
         self.newTranslation = self.originalTranslation
 
     def change(self, diff):

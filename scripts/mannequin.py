@@ -1,7 +1,7 @@
 from maya import cmds
-from maya import OpenMaya as om
-from maya import OpenMayaUI as ui
-from maya import OpenMayaAnim as anim
+from maya.api import OpenMaya as om
+from maya.api import OpenMayaAnim as anim
+from maya.OpenMayaUI import MQtUtil
 
 from PySide.QtCore import *
 from PySide.QtGui import *
@@ -444,8 +444,7 @@ class MannequinToolPanel:
         """
 
         objectXform = om.MFnTransform(dagPath)
-        rotation = om.MEulerRotation()
-        objectXform.getRotation(rotation)
+        rotation = objectXform.rotation()
 
         xx = om.MAngle.internalToUI(rotation.x)
         panelGui.xEdit.setText("{:.3f}".format(xx))
@@ -468,7 +467,7 @@ class MannequinToolPanel:
         """
 
         objectXform = om.MFnTransform(dagPath)
-        translation = objectXform.getTranslation(om.MSpace.kTransform)
+        translation = objectXform.translation(om.MSpace.kTransform)
 
         xx = om.MDistance.internalToUI(translation.x)
         panelGui.xEdit.setText("{:.3f}".format(xx))
@@ -623,14 +622,14 @@ def setupMannequinUI():
     ioDagPaths = ioTokens[::2]
     ioAvailableStyles = ioTokens[1::2]
 
-    mannequinDockPtr = ui.MQtUtil.findLayout("mannequinPaletteDock")
+    mannequinDockPtr = MQtUtil.findLayout("mannequinPaletteDock")
     mannequinDock = wrapInstance(long(mannequinDockPtr), QWidget)
     mannequinDock.setMinimumWidth(300)
 
-    mannequinLayoutPtr = ui.MQtUtil.findLayout("mannequinPaletteLayout")
+    mannequinLayoutPtr = MQtUtil.findLayout("mannequinPaletteLayout")
     mannequinLayout = wrapInstance(long(mannequinLayoutPtr), QWidget)
 
-    mannequinSearchPtr = ui.MQtUtil.findControl("mannequinSearchField")
+    mannequinSearchPtr = MQtUtil.findControl("mannequinSearchField")
     mannequinSearch = wrapInstance(long(mannequinSearchPtr), QLineEdit)
 
     uiFile = QFile(os.path.join(os.path.dirname(__file__), "mannequin.ui"))
@@ -644,12 +643,8 @@ def setupMannequinUI():
 
     joints = []
     for i in range(selList.length()):
-        dagPath = om.MDagPath()
-        selList.getDagPath(i, dagPath)
-
-        dependNode = om.MObject()
-        selList.getDependNode(i, dependNode)
-
+        dagPath = selList.getDagPath(i)
+        dependNode = selList.getDependNode(i)
         styles = ioAvailableStyles[i]
 
         joints.append(JointInfo(dagPath, dependNode, styles))
@@ -808,8 +803,7 @@ def mannequinSelectionChanged(dagString, style):
     try:
         selList = om.MSelectionList()
         selList.add(dagString)
-        dagPath = om.MDagPath()
-        selList.getDagPath(0, dagPath)
+        dagPath = selList.getDagPath(0)
         mannequinToolPanel.select(dagPath, style)
     except:
         mannequinToolPanel.select(None)
@@ -819,3 +813,6 @@ def tearDownMannequinUI():
     """Remove all of the callbacks and event filters for the UI."""
 
     mannequinToolPanel.reset()
+
+def maya_useNewAPI():
+    pass
