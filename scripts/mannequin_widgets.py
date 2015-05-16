@@ -12,6 +12,7 @@ class DragWidget(QWidget):
         self.sensitivity = sensitivity
         self.setCursor(Qt.SizeHorCursor)
         self.originalMouseX = None
+        self.autoKey = False
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -23,6 +24,8 @@ class DragWidget(QWidget):
 
     def mousePressEvent(self, event):
         self.originalMouseX = event.globalX()
+        self.autoKey = cmds.autoKeyframe(query=True, state=True)
+        cmds.autoKeyframe(state=False)
         self.beginChange()
 
     def mouseMoveEvent(self, event):
@@ -39,6 +42,7 @@ class DragWidget(QWidget):
             return
 
         self.originalMouseX = None
+        cmds.autoKeyframe(state=self.autoKey)
         self.finalizeChange()
 
     def beginChange(self):
