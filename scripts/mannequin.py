@@ -157,7 +157,7 @@ class MannequinToolPanel():
         if dagPath is None:
             selectedPanel = ""
         else:
-            selectedPanel = dagPath.partialPathName()
+            selectedPanel = dagPath.fullPathName()
 
         for nodeName, style in self.panels:
             isTheOne = nodeName == selectedPanel and style == targetStyle
@@ -228,7 +228,7 @@ class MannequinToolPanel():
 
         # Register panels according to DAG path.
         dagPath = jointInfo.dagPath
-        nodeName = dagPath.partialPathName()
+        nodeName = dagPath.fullPathName()
         self.dagPaths[nodeName] = dagPath
         self.panels[(nodeName, style)] = panelGui
 
@@ -238,10 +238,11 @@ class MannequinToolPanel():
         panelGui.zEdit.setValidator(self.validator)
 
         # Setup panel title.
-        if len(nodeName) > self.prefixTrim:
-            trimmedName = nodeName[self.prefixTrim:]
+        displayName = dagPath.partialPathName()
+        if len(displayName) > self.prefixTrim:
+            trimmedName = displayName[self.prefixTrim:]
         else:
-            trimmedName = nodeName
+            trimmedName = displayName
         panelGui.groupBox.setTitle(trimmedName)
 
         # Set up drag-label UI.
@@ -326,7 +327,9 @@ class MannequinToolPanel():
                            constructor; unused at this time
         """
 
-        nodeName, attrName = plug.name().split(".")
+        dagNode = om.MFnDagNode(node)
+        nodeName = dagNode.fullPathName()
+        attrName = plug.partialName(False, False, False, False, False, True)
 
         if attrName[:6] == "rotate" and (nodeName, "r") in self.panels:
             self.updateQueue.append((nodeName, "r"))
@@ -418,7 +421,7 @@ class MannequinToolPanel():
         :type index: int
         """
 
-        nodeName = dagPath.partialPathName()
+        nodeName = dagPath.fullPathName()
         panelGui = self.panels[(nodeName, "r")]
 
         # Because I'm lazy, I'm going to use the setAttr command!
@@ -446,7 +449,7 @@ class MannequinToolPanel():
         :type index: int
         """
 
-        nodeName = dagPath.partialPathName()
+        nodeName = dagPath.fullPathName()
         panelGui = self.panels[(nodeName, "t")]
 
         # Because I'm lazy, I'm going to use the setAttr command!
