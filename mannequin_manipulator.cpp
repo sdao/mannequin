@@ -12,6 +12,7 @@
 #include <maya/MFnSkinCluster.h>
 #include <maya/MGlobal.h>
 #include <maya/MFnManip3D.h>
+#include <maya/MSelectionList.h>
 
 const MTypeId MannequinManipulator::id = MTypeId(0xcafecab);
 
@@ -56,7 +57,12 @@ bool MannequinManipulator::highlight(MDagPath dagPath, bool force) {
     }
 
     _highlight = dagPath;
-    MGlobal::select(_ctx->meshDagPath(), compObj, MGlobal::kReplaceList);
+
+    MSelectionList selList;
+    selList.add(_ctx->meshDagPath(), compObj);
+    selList.add(_ctx->selectionDagPath());
+    MGlobal::setActiveSelectionList(selList);
+
     return true;
   } while (false);
 

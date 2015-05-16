@@ -17,6 +17,7 @@
 #include <maya/MDagPathArray.h>
 #include <maya/M3dView.h>
 #include <maya/MItMeshPolygon.h>
+#include <maya/MAnimMessage.h>
 
 constexpr double MannequinContext::MANIP_DEFAULT_SCALE;
 constexpr double MannequinContext::MANIP_ADJUSTMENT;
@@ -470,10 +471,18 @@ void MannequinContext::toolOnSetup(MEvent& event) {
   setImage("mannequin_maya2016.png", MPxContext::kImage1);
   setTitleString("Mannequin");
   updateText();
+
+  // Register animation keyframe callback.
+  _callbacks.append(MAnimMessage::addAnimKeyframeEditCheckCallback(
+    MannequinContext::keyframeCallback
+  ));
 }
 
 void MannequinContext::toolOffCleanup() {
   select(MDagPath());
+
+  MMessage::removeCallbacks(_callbacks);
+  _callbacks.clear();
 
   _mannequinManip = nullptr;
   _rotateManip = nullptr;
@@ -486,6 +495,19 @@ void MannequinContext::toolOffCleanup() {
   deleteManipulators();
   MGlobal::clearSelectionList();
   MGlobal::executeCommand("mannequinContextFinish");
+}
+
+void MannequinContext::keyframeCallback(bool* retCode,
+                                        MPlug& plug,
+                                        void* clientData) {
+  MStatus ret;
+  MFnDagNode dagNode(plug.node(), &ret);
+
+  // Basically, we allow anything that's a DAG node to set a keyframe.
+  // This should roughly allow all joints to set keys but disallow the mesh
+  // selection from doing so!
+  *retCode = !ret.error();
+  return;
 }
 
 void MannequinContext::getClassName(MString& name) const {

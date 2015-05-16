@@ -11,6 +11,7 @@
 #include <maya/MPoint.h>
 #include <maya/MVector.h>
 #include <maya/MPxManipulatorNode.h>
+#include <maya/MCallbackIdArray.h>
 
 #include <boost/optional.hpp>
 
@@ -82,6 +83,8 @@ public:
   virtual MStatus doPress(MEvent& event);
   MStatus doPress();
 
+  static void keyframeCallback(bool* retCode, MPlug& plug, void* clientData);
+
 private:
   static constexpr double MANIP_DEFAULT_SCALE = 1.5;
   static constexpr double MANIP_ADJUSTMENT = 0.1;
@@ -104,6 +107,8 @@ private:
   mutable boost::optional<double> _autoAdjust;
   double _longestJoint;
   double _jointLengthRatio;
+
+  MCallbackIdArray _callbacks;
 };
 
 class MannequinContextCommand : public MPxContextCommand
