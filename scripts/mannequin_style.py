@@ -58,3 +58,9 @@ QGroupBox:flat {
 	border: 2px solid #ee2;
 }
 """
+
+    STYLE_FIELD_KEYED = """
+QLineEdit {
+    background-color: #993333;
+}
+"""

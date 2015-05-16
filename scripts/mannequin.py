@@ -1,6 +1,7 @@
 from maya import cmds
 from maya import OpenMaya as om
 from maya import OpenMayaUI as ui
+from maya import OpenMayaAnim as anim
 
 from PySide.QtCore import *
 from PySide.QtGui import *
@@ -89,6 +90,8 @@ class MannequinToolPanel():
 
         """:type: list[om.MCallbackId]"""
         self.callbacks = []
+        """:type: list[int]"""
+        self.jobs = []
         """:type: QWidget"""
         self.parent = None
         """:type: QWidget"""
@@ -125,8 +128,12 @@ class MannequinToolPanel():
 
         # Cleanup callbacks.
         for x in self.callbacks:
-            om.MNodeMessage.removeCallback(x)
+            om.MMessage.removeCallback(x)
         self.callbacks = []
+
+        for x in self.jobs:
+            cmds.scriptJob(kill=x)
+        self.jobs = []
 
         # Reset everything.
         self.parent = parent
@@ -310,6 +317,15 @@ class MannequinToolPanel():
         # Setup focus event filter.
         self.focusEventFilter.install(self.panels)
 
+        # Setup animation curve callback and time changed callback.
+        callbackId = anim.MAnimMessage.addAnimKeyframeEditedCallback(
+            self.animKeyframeCallback
+        )
+        self.callbacks.append(callbackId)
+
+        jobId = cmds.scriptJob(event=("timeChanged", self.timeChangedCallback))
+        self.jobs.append(jobId)
+
         # Setup the rest of the UI and show it.
         self.searchField.textChanged.connect(self.search)
         self.gui.layout().setAlignment(Qt.AlignTop)
@@ -363,6 +379,53 @@ class MannequinToolPanel():
                 self.updatePanelTranslation(panelGui, dagPath)
 
         self.updateQueue = []
+
+    def animKeyframeCallback(self, objects, data):
+        self.updateAllKeyStatuses()
+
+    def timeChangedCallback(self):
+        self.updateAllKeyStatuses()
+
+    def updateAllKeyStatuses(self):
+        currentTime = cmds.currentTime(query=True)
+        timeRange = (currentTime, currentTime)
+        for nodeName, style in self.panels:
+            if style == "r":
+                xKeyed = cmds.keyframe("{0}.rotateX".format(nodeName),
+                                       time=timeRange,
+                                       query=True,
+                                       keyframeCount=True)
+                yKeyed = cmds.keyframe("{0}.rotateY".format(nodeName),
+                                       time=timeRange,
+                                       query=True,
+                                       keyframeCount=True)
+                zKeyed = cmds.keyframe("{0}.rotateZ".format(nodeName),
+                                       time=timeRange,
+                                       query=True,
+                                       keyframeCount=True)
+            elif style == "t":
+                xKeyed = cmds.keyframe("{0}.translateX".format(nodeName),
+                                       time=timeRange,
+                                       query=True,
+                                       keyframeCount=True)
+                yKeyed = cmds.keyframe("{0}.translateY".format(nodeName),
+                                       time=timeRange,
+                                       query=True,
+                                       keyframeCount=True)
+                zKeyed = cmds.keyframe("{0}.translateZ".format(nodeName),
+                                       time=timeRange,
+                                       query=True,
+                                       keyframeCount=True)
+            else:
+                continue
+
+            panel = self.panels[(nodeName, style)]
+            panel.xEdit.setStyleSheet(MannequinStylesheets.STYLE_FIELD_KEYED
+                                      if xKeyed > 0 else "")
+            panel.yEdit.setStyleSheet(MannequinStylesheets.STYLE_FIELD_KEYED
+                                      if yKeyed > 0 else "")
+            panel.zEdit.setStyleSheet(MannequinStylesheets.STYLE_FIELD_KEYED
+                                      if zKeyed > 0 else "")
 
     @staticmethod
     def updatePanelRotation(panelGui, dagPath):
