@@ -68,9 +68,9 @@ class FocusEventFilter(QObject):
 
     def eventFilter(self, widget, event):
         if event.type() == QEvent.MouseButtonPress:
-            for (id, panel) in self.panels.iteritems():
+            for (nodeId, panel) in self.panels.iteritems():
                 if panel.groupBox == widget:
-                    self.selectNode(id)  # Note: id is a tuple (name, style).
+                    self.selectNode(nodeId)  # Note: id is tuple (name, style).
                     return True
             return True
 
@@ -83,31 +83,34 @@ class FocusEventFilter(QObject):
         cmds.mannequinContext(currentContext, e=True, sel=nodeId)
 
 
-class MannequinToolPanel():
+class MannequinToolPanel:
+    """
+    :type callbacks: list[om.MCallbackId]
+    :type jobs: list[int]
+    :type parent: QWidget
+    :type gui: QWidget
+    :type searchField: QLineEdit
+    :type prefixTrim: int
+    :type dagPaths: dict[str, om.MDagPath]
+    :type panels: dict[(str, str), QWidget]
+    :type updateQueue: list[(str, str)]
+    :type validator: QDoubleValidator
+    """
+
     def __init__(self):
         self.loader = QUiLoader()
         self.resizeEventFilter = ResizeEventFilter()
         self.focusEventFilter = FocusEventFilter()
 
-        """:type: list[om.MCallbackId]"""
         self.callbacks = []
-        """:type: list[int]"""
         self.jobs = []
-        """:type: QWidget"""
         self.parent = None
-        """:type: QWidget"""
         self.gui = None
-        """:type: QLineEdit"""
         self.searchField = None
-        """:type: int"""
         self.prefixTrim = 0
-        """:type: dict[str, om.MDagPath]"""
         self.dagPaths = {}
-        """:type: dict[str, QWidget]"""
         self.panels = {}
-        """:type: list[(str, str)]"""
         self.updateQueue = []
-        """:type: QDoubleValidator"""
         self.validator = None
 
     def reset(self,
@@ -158,8 +161,11 @@ class MannequinToolPanel():
     def select(self, dagPath, targetStyle=None):
         """ Highlights the panel for the given DAG path and ensures it's visible.
 
-        :param dagPath: the DAG path that was selected
-        :type dagPath: om.MDagPath
+        :param dagPath: the DAG path that was selected (or None if no selection)
+        :type dagPath: om.MDagPath | None
+        :param targetStyle: the presentation style currently in use, e.g.
+                            "r" for rotation or "t" for translation
+        :type targetStyle: str
         """
 
         if dagPath is None:
@@ -183,7 +189,7 @@ class MannequinToolPanel():
 
         :param jointGroup: a group of JointInfos that should be displayed
                            together
-        :type jointDisplay: list[JointInfo]
+        :type jointGroup: list[JointInfo]
         """
 
         availableStyles = jointGroup[0].availableStyles
@@ -723,10 +729,10 @@ def organizeJoints(joints):
             jointPairs += [[x] for x in group]
             continue
 
-        """:type: JointInfo"""
         joint0 = group[0]
         """:type: JointInfo"""
         joint1 = group[1]
+        """:type: JointInfo"""
 
         # If group doesn't have matching presentation style, then can't match.
         if joint0.availableStyles != joint1.availableStyles:
