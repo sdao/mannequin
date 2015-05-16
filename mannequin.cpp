@@ -650,6 +650,29 @@ MStatus MannequinContextCommand::doEditFlags() {
 
     _mannequinContext->setManipAutoAdjust(arg);
     return MS::kSuccess;
+  } else if (parse.isFlagSet("-sak")) {
+    int autoState;
+    MGlobal::executeCommand("autoKeyframe -q -state", autoState);
+    MGlobal::executeCommand("autoKeyframe -e -state false");
+
+    bool result = autoState > 0;
+    setResult(result);
+
+    return MS::kSuccess;
+  } else if (parse.isFlagSet("-rak")) {
+    MStatus err;
+    bool arg = parse.flagArgumentBool("-rak", 0, &err);
+    if (err.error()) {
+      return err;
+    }
+
+    if (arg) {
+      MGlobal::executeCommand("autoKeyframe -e -state true");
+    } else {
+      MGlobal::executeCommand("autoKeyframe -e -state false");
+    }
+
+    return MS::kSuccess;
   }
 
   return MS::kSuccess;
@@ -705,6 +728,10 @@ MStatus MannequinContextCommand::doQueryFlags() {
   } else if (parse.isFlagSet("-ma")) {
     bool result = _mannequinContext->manipAutoAdjust();
     setResult(result);
+  } else if (parse.isFlagSet("-sak")) {
+    return MS::kInvalidParameter;
+  } else if (parse.isFlagSet("-rak")) {
+    return MS::kInvalidParameter;
   }
 
   return MS::kSuccess;
@@ -717,6 +744,8 @@ MStatus MannequinContextCommand::appendSyntax() {
   syn.addFlag("-sel", "-selection", MSyntax::kString, MSyntax::kString);
   syn.addFlag("-ms", "-manipSize", MSyntax::kDouble);
   syn.addFlag("-ma", "-manipAdjust", MSyntax::kDouble);
+  syn.addFlag("-sak", "-saveAutoKeyframe");
+  syn.addFlag("-rak", "-restoreAutoKeyframe", MSyntax::kBoolean);
 
   return MS::kSuccess;
 }
