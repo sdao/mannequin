@@ -58,19 +58,19 @@ class FocusEventFilter(QObject):
 
     def install(self, panels):
         self.panels = panels.copy()
-        for x in self.panels:
-            self.panels[x].groupBox.installEventFilter(self)
+        for panel in self.panels.itervalues():
+            panel.groupBox.installEventFilter(self)
 
     def remove(self):
-        for x in self.panels:
-            self.panels[x].groupBox.removeEventFilter(self)
+        for panel in self.panels.itervalues():
+            panel.groupBox.removeEventFilter(self)
         self.panels = {}
 
     def eventFilter(self, widget, event):
         if event.type() == QEvent.MouseButtonPress:
-            for x in self.panels:
-                if self.panels[x].groupBox == widget:
-                    self.selectNode(x)  # Note: x is a tuple w/ name and style.
+            for (id, panel) in self.panels.iteritems():
+                if panel.groupBox == widget:
+                    self.selectNode(id)  # Note: id is a tuple (name, style).
                     return True
             return True
 
@@ -79,6 +79,7 @@ class FocusEventFilter(QObject):
     @staticmethod
     def selectNode(nodeId):
         currentContext = cmds.currentCtx()
+        # Note: sel is a tuple (nodeName, style).
         cmds.mannequinContext(currentContext, e=True, sel=nodeId)
 
 
@@ -166,9 +167,8 @@ class MannequinToolPanel():
         else:
             selectedPanel = dagPath.fullPathName()
 
-        for nodeName, style in self.panels:
+        for ((nodeName, style), panel) in self.panels.iteritems():
             isTheOne = nodeName == selectedPanel and style == targetStyle
-            panel = self.panels[(nodeName, style)]
             panel.groupBox.setFlat(isTheOne)
 
             if isTheOne and panel.isVisible():
@@ -389,7 +389,7 @@ class MannequinToolPanel():
     def updateAllKeyStatuses(self):
         currentTime = cmds.currentTime(query=True)
         timeRange = (currentTime, currentTime)
-        for nodeName, style in self.panels:
+        for ((nodeName, style), panel) in self.panels.iteritems():
             if style == "r":
                 xKeyed = cmds.keyframe("{0}.rotateX".format(nodeName),
                                        time=timeRange,
@@ -419,7 +419,6 @@ class MannequinToolPanel():
             else:
                 continue
 
-            panel = self.panels[(nodeName, style)]
             panel.xEdit.setStyleSheet(MannequinStylesheets.STYLE_FIELD_KEYED
                                       if xKeyed > 0 else "")
             panel.yEdit.setStyleSheet(MannequinStylesheets.STYLE_FIELD_KEYED
@@ -537,11 +536,12 @@ class MannequinToolPanel():
         :type text: str
         """
 
-        for nodeName, style in self.panels:
-            if text.lower() in nodeName.lower():
-                self.panels[(nodeName, style)].show()
+        for panel in self.panels.itervalues():
+            displayName = panel.groupBox.title()
+            if text.lower() in displayName.lower():
+                panel.show()
             else:
-                self.panels[(nodeName, style)].hide()
+                panel.hide()
 
         self.gui.layout().activate()
         self.relayout()
