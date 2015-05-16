@@ -29,10 +29,10 @@ Usage
 -----
 Mannequin will install a "Mannequin" shelf in Maya if one doesn't exist. For
 best results, hide the joints in your rig before continuing. Select the
-smooth-bound mesh and click the Mannequin icon
-(![Mannequin icon](icons/mannequin_maya2016.png)) to begin. Mannequin doesn't
-work with NURBS surfaces, only poly meshes. However, it does work with poly
-meshes that have nodes such as the Smooth node applied.
+smooth-bound mesh and click the ![Mannequin icon](icons/mannequin_maya2016.png)
+Mannequin icon to begin. Mannequin doesn't work with NURBS surfaces, only poly
+meshes. However, it does work with poly meshes that have nodes such as the
+Smooth node applied.
 
 Screenshots
 -----------
