@@ -15,8 +15,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# PyCharm
+# PyCharm/Xcode projects
 .idea/
+*.xcodeproj/
 
 # Precompiled Headers
 *.gch
