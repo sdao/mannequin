@@ -43,6 +43,7 @@ mannequin_OBJECTS  := $(SRCDIR)/mannequin.o \
 	$(SRCDIR)/mannequin_manipulator.o \
 	$(SRCDIR)/move_manipulator.o
 mannequin_PLUGIN   := $(DSTDIR)/mannequin.$(EXT)
+mannequin_MODULE   := $(DSTDIR)/mannequin_module
 mannequin_MAKEFILE := $(DSTDIR)/Makefile
 
 #
@@ -74,24 +75,35 @@ $(mannequin_PLUGIN):  LIBS     := $(LIBS)   -lOpenMaya -lOpenMayaUI \
 # Rules definitions
 #
 
-.PHONY: depend_mannequin clean_mannequin Clean_mannequin
+.PHONY: depend_mannequin module_mannequin clean_mannequin Clean_mannequin
 
 
 $(mannequin_PLUGIN): $(mannequin_OBJECTS)
 	-rm -f $@
 	$(LD) -o $@ $(LFLAGS) $^ $(LIBS)
 
-depend_mannequin :
+depend_mannequin:
 	makedepend $(INCLUDES) $(MDFLAGS) -f$(DSTDIR)/Makefile $(mannequin_SOURCES)
+
+module_mannequin: $(mannequin_PLUGIN)
+	rm -rf $(mannequin_MODULE)
+	mkdir -p $(mannequin_MODULE)
+	mkdir -p $(mannequin_MODULE)/plug-ins
+	cp -r icons $(mannequin_MODULE)
+	cp -r scripts $(mannequin_MODULE)
+	cp -r mannequin.bundle $(mannequin_MODULE)/plug-ins
 
 clean_mannequin:
 	-rm -f $(mannequin_OBJECTS)
+	-rm -rf $(mannequin_MODULE)
 
 Clean_mannequin:
 	-rm -f $(mannequin_MAKEFILE).bak $(mannequin_OBJECTS) $(mannequin_PLUGIN)
+	-rm -rf $(mannequin_MODULE)
 
 
 plugins: $(mannequin_PLUGIN)
 depend:	 depend_mannequin
+module:	 module_mannequin
 clean:	 clean_mannequin
 Clean:	 Clean_mannequin

@@ -16,36 +16,35 @@ Mannequin is currently tested only on Maya 2016. Previous versions of the code
 worked on Maya 2015, so with some minor modifications, the current version
 should also compile for older Maya versions.
 
-You will want to create a Maya module for the plugin. The module should have an
-`icons` folder and a `scripts` folder copied from this repo. In addition, you
-need to compile the plugin and put the compiled file (`.so`, `.bundle`, or
-`.mll`) in a `plug-ins` folder in the module.
-
-You'll then need to create a module definition and place it in one of Maya's
-plug-in directories. (On OS X, one such directory is
-`/Users/Shared/Autodesk/modules/maya`.)
-
-Example module:
-```
-mannequin_module
-├── scripts
-|   ├── *.mel
-|   ├── *.py
-|   └── *.ui
-├── plug-ins
-|   └── mannequin.bundle
-└── icons
-    └── mannequin_maya2016.png
-```
-
-Example module definition (`mannequin.mod`):
-```
-+ Mannequin 1.0 /Users/Steve/mannequin_module
-```
+You will also need [Boost](http://www.boost.org/) installed. If you use
+[Homebrew](http://brew.sh), you can run `brew install boost`.
 
 The Makefile included with this project is copied from the Mac OS X version of
 the Maya Developer's Kit. To compile Linux or Windows versions, you will need
 to copy and modify the Makefile appropriate for your operating system.
+
+With the Mac OS X Makefile, use `make` to build only the plugin
+`mannequin.bundle`, and use `make module` to create the plugin module
+`mannequin_module`. In 99% of cases, you will want to use `make module` to
+create the plugin module. The module can be relocated wherever you want after
+everything has been built.
+
+To install the Mannequin plugin module in Maya, you will need to copy the
+included `mannequin.mod` file into one of Maya's plugin module search paths.
+(On OS X, one such directory is `/Users/Shared/Autodesk/modules/maya`.) You will
+also need to edit the `mannequin.mod` file to point to the location of
+`mannequin_module`.
+
+Original `mannequin.mod`:
+```
++ Mannequin 0.1 /path/to/mannequin_module
+```
+
+Suppose that I relocated the `mannequin_module` folder to `/Users/Steve`.
+I would edit `mannequin.mod` to be:
+```
++ Mannequin 0.1 /Users/Steve/mannequin_module
+```
 
 ### Autodesk documentation links
 * [Building plug-ins](http://help.autodesk.com/cloudhelp/2016/ENU/Maya-SDK/files/Setting_up_your_build_environment.htm)

@@ -7,7 +7,7 @@
 # Compiled Bundles
 *.bundle
 
-# Symlinks
+# Generated Maya modules
 mannequin_module/
 
 # Python
@@ -27,9 +27,6 @@ __pycache__/
 *.so
 *.dylib
 *.dll
-
-# Fortran module files
-*.mod
 
 # Compiled Static libraries
 *.lai
