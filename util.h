@@ -11,25 +11,25 @@ namespace Util {
   inline bool raySphereIntersection(const MPoint& rayOrigin,
                                     const MVector& rayDirection,
                                     const MPoint& sphereOrigin,
-                                    float sphereRadius,
-                                    float* outDistance) {
+                                    double sphereRadius,
+                                    double* outDistance = nullptr) {
     MVector diff = rayOrigin - sphereOrigin;
     MVector l = rayDirection.normal();
 
     // See Wikipedia:
     // <http://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection>
     // Note that in the OpenMaya API, x * y is dot product and x ^ y is cross.
-    float a = l * l;
-    float b = l * diff;
-    float c = (diff * diff) - pow(sphereRadius, 2);
+    double a = l * l;
+    double b = l * diff;
+    double c = (diff * diff) - pow(sphereRadius, 2);
 
-    float discriminant = (b * b) - (a * c);
+    double discriminant = (b * b) - (a * c);
 
     if (discriminant > 0.0f) {
-      discriminant = sqrtf(discriminant);
+      discriminant = sqrt(discriminant);
       // Quadratic has at most 2 results.
-      float resPos = (-b + discriminant);
-      float resNeg = (-b - discriminant);
+      double resPos = (-b + discriminant);
+      double resNeg = (-b - discriminant);
 
       // Neg before pos because we want to return closest isect first.
       if (resNeg > 1e-3) {

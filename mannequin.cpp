@@ -19,8 +19,8 @@
 #include <maya/MItMeshPolygon.h>
 #include <maya/MAnimMessage.h>
 
-constexpr double MannequinContext::MANIP_DEFAULT_SCALE;
-constexpr double MannequinContext::MANIP_ADJUSTMENT;
+const double MannequinContext::MANIP_DEFAULT_SCALE = 1.5;
+const double MannequinContext::MANIP_ADJUSTMENT = 0.1;
 
 MannequinContext::MannequinContext()
   : _mannequinManip(nullptr),
@@ -131,7 +131,7 @@ void MannequinContext::calculateDagLookupTables(MObject skinObj) {
   MDagPathArray influenceObjects;
   unsigned int numInfluences = skin.influenceObjects(influenceObjects);
 
-  for (int i = 0; i < numInfluences; ++i) {
+  for (unsigned int i = 0; i < numInfluences; ++i) {
     MDagPath dagPath = influenceObjects[i];
     _dagIndexLookup[dagPath] = i;
     _dagStyleLookup[dagPath] = dagPath.childCount() == 0 ?
@@ -165,16 +165,16 @@ void MannequinContext::calculateMaxInfluences(MDagPath dagPath,
     it.getVertices(polyVertices);
 
     std::vector<double> weightSums(numInfluences, 0.0f);
-    for (int vtx = 0; vtx < polyVertices.length(); ++vtx) {
+    for (unsigned int vtx = 0; vtx < polyVertices.length(); ++vtx) {
       int vtxId = polyVertices[vtx];
-      for (int influence = 0; influence < numInfluences; ++influence) {
+      for (unsigned int influence = 0; influence < numInfluences; ++influence) {
         weightSums[influence] += weights[vtxId * numInfluences + influence];
       }
     }
 
     double maxWeight = std::numeric_limits<double>::min();
     int maxIndex = 0;
-    for (int influence = 0; influence < numInfluences; ++influence) {
+    for (unsigned int influence = 0; influence < numInfluences; ++influence) {
       if (weightSums[influence] > maxWeight) {
         maxWeight = weightSums[influence];
         maxIndex = influence;
@@ -189,17 +189,17 @@ void MannequinContext::calculateLongestJoint(MObject skinObj) {
   MFnSkinCluster skin(skinObj);
 
   MDagPathArray influenceObjects;
-  int numInfluences = skin.influenceObjects(influenceObjects);
+  unsigned int numInfluences = skin.influenceObjects(influenceObjects);
 
   double maxLength = 0.0;
-  for (int i = 0; i < numInfluences; ++i) {
+  for (unsigned int i = 0; i < numInfluences; ++i) {
     MDagPath jointDagPath = influenceObjects[i];
     unsigned int children = jointDagPath.childCount();
 
     // We're looking through the children instead of at the actual joint
     // because we want to avoid the root transform. We end up looking at the
     // same number of objects since a transform can have only one parent.
-    for (int i = 0; i < children; ++i) {
+    for (unsigned int i = 0; i < children; ++i) {
       MObject child = jointDagPath.child(i);
       if (child.hasFn(MFn::kJoint)) {
         MFnDagNode dagNode(child);
@@ -220,7 +220,7 @@ void MannequinContext::calculateJointLengthRatio(MDagPath jointDagPath) {
     unsigned int children = jointDagPath.childCount();
     double maxLength = 0.0;
 
-    for (int i = 0; i < children; ++i) {
+    for (unsigned int i = 0; i < children; ++i) {
       MObject child = jointDagPath.child(i);
       if (child.hasFn(MFn::kJoint)) {
         MFnDagNode dagNode(child);
@@ -280,12 +280,10 @@ bool MannequinContext::intersectManip(MPxManipulatorNode* manip) {
     float manipRadius = manipAdjustedScale() * MFnManip3D::globalSize() * 1.25f;
 
     bool hit;
-    float distanceOut;
     hit = Util::raySphereIntersection(linePoint,
       lineDirection,
       selectionPivot,
-      manipRadius,
-      &distanceOut);
+      manipRadius);
 
     if (hit) {
       return true;
@@ -321,7 +319,7 @@ double MannequinContext::manipScale() const {
 void MannequinContext::setManipScale(double scale) {
   MGlobal::setOptionVarValue("chartreuseManipScale", scale);
 
-  _scale = scale;
+  _scale = float(scale);
 
   if (_rotateManip || _moveManip) {
     reselect();
@@ -355,8 +353,8 @@ void MannequinContext::setManipAutoAdjust(bool autoAdjust) {
   }
 }
 
-double MannequinContext::manipAdjustedScale() const {
-  return manipScale() * MANIP_ADJUSTMENT * _longestJoint * _jointLengthRatio;
+float MannequinContext::manipAdjustedScale() const {
+  return float(manipScale() * MANIP_ADJUSTMENT * _longestJoint * _jointLengthRatio);
 }
 
 int MannequinContext::influenceIndexForJointDagPath(const MDagPath& dagPath) {
@@ -616,9 +614,9 @@ MStatus MannequinContextCommand::doEditFlags() {
     }
 
     MDagPathArray influenceObjects;
-    int numInfluences = skin.influenceObjects(influenceObjects);
+    unsigned int numInfluences = skin.influenceObjects(influenceObjects);
 
-    for (int i = 0; i < numInfluences; i++) {
+    for (unsigned int i = 0; i < numInfluences; i++) {
       MString fullName = influenceObjects[i].fullPathName();
       MString partialName = influenceObjects[i].partialPathName();
 
@@ -693,10 +691,10 @@ MStatus MannequinContextCommand::doQueryFlags() {
     }
 
     MDagPathArray influenceObjects;
-    int numInfluences = skin.influenceObjects(influenceObjects);
+    unsigned int numInfluences = skin.influenceObjects(influenceObjects);
 
     MString result;
-    for (int i = 0; i < numInfluences; i++) {
+    for (unsigned int i = 0; i < numInfluences; i++) {
       if (i != 0) {
         result += " ";
       }

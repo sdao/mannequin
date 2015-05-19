@@ -66,7 +66,7 @@ bool MannequinManipulator::highlight(MDagPath dagPath, bool force) {
     return true;
   } while (false);
 
-error:
+  // Error occurred in the loop.
   _highlight = MDagPath();
   MGlobal::clearSelectionList();
   return true;
@@ -117,7 +117,7 @@ MStatus MannequinManipulator::doMove(M3dView& view, bool& refresh) {
     int hitFace;
     bool hit = mesh.closestIntersection(worldLinePoint, lineDirection,
       NULL, NULL, false, MSpace::kWorld, 1000.0f, false, NULL, hitPoint, NULL,
-      &hitFace, NULL, NULL, NULL, 1e-3);
+      &hitFace, NULL, NULL, NULL, 1e-3f);
 
     if (!hit) {
       break;
@@ -145,7 +145,7 @@ MStatus MannequinManipulator::doMove(M3dView& view, bool& refresh) {
     return MS::kSuccess;
   } while (false);
 
-error:
+  // Error occurred in the loop.
   refresh = highlight();
   return MS::kUnknownParameter;
 }
@@ -195,7 +195,7 @@ MPoint MannequinManipulator::drawCenter() const {
   unsigned int children = _highlight.childCount();
   unsigned int numChildJoints = 0;
   MObject singleChildJoint;
-  for (int i = 0; i < children; ++i) {
+  for (unsigned int i = 0; i < children; ++i) {
     MObject child = _highlight.child(i);
     if (child.hasFn(MFn::kJoint)) {
       numChildJoints++;

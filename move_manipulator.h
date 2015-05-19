@@ -29,6 +29,9 @@ public:
   static void* creator();
   static MStatus initialize();
   static const MTypeId id;
+  static void beginDrawable(MHWRender::MUIDrawManager &drawManager,
+    unsigned int name,
+    bool pickable);
 
 private:
   int _translateIndex;

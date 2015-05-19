@@ -15,9 +15,34 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# PyCharm/Xcode projects
+# PyCharm projects
 .idea/
+
+# Xcode projects
 *.xcodeproj/
+
+# Visual Studio temp files
+*.suo
+*.user
+*.userosscache
+*.sdf
+*.opensdf
+*.sln.docstates
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
 
 # Precompiled Headers
 *.gch

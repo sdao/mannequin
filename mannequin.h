@@ -21,9 +21,9 @@ class MannequinManipulator;
 class MannequinMoveManipulator;
 
 namespace JointPresentationStyle {
-  constexpr int NONE = 0;
-  constexpr int ROTATE = 1 << 1;
-  constexpr int TRANSLATE = 1 << 2;
+  const int NONE = 0;
+  const int ROTATE = 1 << 1;
+  const int TRANSLATE = 1 << 2;
 
   inline MString toString(int style) {
     MString result = "";
@@ -66,7 +66,7 @@ public:
   void setManipScale(double scale);
   bool manipAutoAdjust() const;
   void setManipAutoAdjust(bool autoAdjust);
-  double manipAdjustedScale() const;
+  float manipAdjustedScale() const;
   int influenceIndexForJointDagPath(const MDagPath& dagPath);
   int presentationStyleForJointDagPath(const MDagPath& dagPath) const;
   void updateText();
@@ -86,8 +86,8 @@ public:
   static void keyframeCallback(bool* retCode, MPlug& plug, void* clientData);
 
 private:
-  static constexpr double MANIP_DEFAULT_SCALE = 1.5;
-  static constexpr double MANIP_ADJUSTMENT = 0.1;
+  static const double MANIP_DEFAULT_SCALE;
+  static const double MANIP_ADJUSTMENT;
 
   MDagPath _meshDagPath;
   MObject _skinObject;
@@ -104,7 +104,7 @@ private:
   MannequinMoveManipulator* _moveManip;
 
   mutable boost::optional<double> _scale;
-  mutable boost::optional<double> _autoAdjust;
+  mutable boost::optional<bool> _autoAdjust;
   double _longestJoint;
   double _jointLengthRatio;
 

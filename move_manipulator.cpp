@@ -128,7 +128,7 @@ void MannequinMoveManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
   shouldDrawHandleAsSelected(_glPickableItem + 1, selected[1]);
   shouldDrawHandleAsSelected(_glPickableItem + 2, selected[2]);
 
-  drawManager.beginDrawable(_glPickableItem + 0, true);
+  beginDrawable(drawManager, _glPickableItem + 0, true);
   drawManager.setLineWidth(MFnManip3D::lineSize());
   drawManager.setColorIndex(selected[0] ? _selColor : _xColor);
   drawManager.line(_origin, _origin + (_x * size));
@@ -136,7 +136,7 @@ void MannequinMoveManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
     true);
   drawManager.endDrawable();
 
-  drawManager.beginDrawable(_glPickableItem + 1, true);
+  beginDrawable(drawManager, _glPickableItem + 1, true);
   drawManager.setLineWidth(MFnManip3D::lineSize());
   drawManager.setColorIndex(selected[1] ? _selColor : _yColor);
   drawManager.line(_origin, _origin + (_y * size));
@@ -144,7 +144,7 @@ void MannequinMoveManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
     true);
   drawManager.endDrawable();
 
-  drawManager.beginDrawable(_glPickableItem + 2, true);
+  beginDrawable(drawManager, _glPickableItem + 2, true);
   drawManager.setLineWidth(MFnManip3D::lineSize());
   drawManager.setColorIndex(selected[2] ? _selColor : _zColor);
   drawManager.line(_origin, _origin + (_z * size));
@@ -160,6 +160,17 @@ void MannequinMoveManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
   drawManager.endDrawable();
 #endif
 };
+
+void MannequinMoveManipulator::beginDrawable(
+  MHWRender::MUIDrawManager &drawManager,
+  unsigned int name,
+  bool pickable) {
+#if MAYA_API_VERSION >= 201600
+  drawManager.beginDrawable(name, pickable);
+#else
+  drawManager.beginDrawable();
+#endif
+}
 
 MStatus MannequinMoveManipulator::doPress(M3dView& view) {
   getPointValue(_translateIndex, false, _opValueBegin);
