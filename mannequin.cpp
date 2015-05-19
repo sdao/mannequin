@@ -319,7 +319,7 @@ double MannequinContext::manipScale() const {
 void MannequinContext::setManipScale(double scale) {
   MGlobal::setOptionVarValue("chartreuseManipScale", scale);
 
-  _scale = float(scale);
+  _scale = scale;
 
   if (_rotateManip || _moveManip) {
     reselect();
