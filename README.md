@@ -10,45 +10,36 @@ different bones in the rig.
 Mannequin also includes a convenient side panel that gives you quick access
 to all the joints in your rig and allows you to search through them.
 
-Packaging/Installation
-----------------------
-Mannequin is currently tested only on Maya 2016. Previous versions of the code
-worked on Maya 2015, so with some minor modifications, the current version
-should also compile for older Maya versions.
 
-You will also need [Boost](http://www.boost.org/) installed. If you use
-[Homebrew](http://brew.sh), you can run `brew install boost`.
+Installation
+------------
+The plugin has been tested on **Maya 2015 SP4** and **Maya 2016** using Mac OS X
+and Windows. It will not work on versions of Maya before 2015 SP4.
 
-The Makefile included with this project is copied from the Mac OS X version of
-the Maya Developer's Kit. To compile Linux or Windows versions, you will need
-to copy and modify the Makefile appropriate for your operating system.
+If you are on Mac OS X or Windows, there are pre-built binaries available from
+the [Releases](https://github.com/sdao/mannnequin/releases) page on GitHub. If
+you are on Linux, you will have to compile the plugin from source (see the
+*Building* section below for some more information).
 
-With the Mac OS X Makefile, use `make` to build only the plugin
-`mannequin.bundle`, and use `make module` to create the plugin module
-`mannequin_module`. In 99% of cases, you will want to use `make module` to
-create the plugin module. The module can be relocated wherever you want after
-everything has been built.
+To install:
 
-To install the Mannequin plugin module in Maya, you will need to copy the
-included `mannequin.mod` file into one of Maya's plugin module search paths.
-(On OS X, one such directory is `/Users/Shared/Autodesk/modules/maya`.) You will
-also need to edit the `mannequin.mod` file to point to the location of
-`mannequin_module`.
+1. Copy the `mannequin_module` folder to your computer. You can put it
+anywhere that you'd like, but please note the location of the `mannequin_module`
+folder.
 
-Original `mannequin.mod`:
-```
-+ Mannequin 0.1 /path/to/mannequin_module
-```
+2. You should then open `mannequin.mod` in a text editor and edit it so that it
+points to your `mannequin_module.` For example, if I relocated the
+`mannequin_module` folder to `/Users/Steve`, I would edit `mannequin.mod` to be:
+  ```
+  + Mannequin 0.1 /Users/Steve/mannequin_module
+  ```
 
-Suppose that I relocated the `mannequin_module` folder to `/Users/Steve`.
-I would edit `mannequin.mod` to be:
-```
-+ Mannequin 0.1 /Users/Steve/mannequin_module
-```
+3. Finally, you need to drop the `mannequin.mod` file into one of Maya's module
+search directories. You can see these directories by executing the MEL command
+`getenv MAYA_MODULE_PATH` in your Maya command line. Possible locations include:
+  * Mac: `/Users/Shared/Autodesk/modules/maya/mannequin.mod`
+  * Windows: `%USERPROFILE%\Documents\maya\modules\mannequin.mod`
 
-### Autodesk documentation links
-* [Building plug-ins](http://help.autodesk.com/cloudhelp/2016/ENU/Maya-SDK/files/Setting_up_your_build_environment.htm)
-* [Maya modules](http://help.autodesk.com/cloudhelp/2016/ENU/Maya-SDK/files/GUID-130A3F57-2A5D-4E56-B066-6B86F68EEA22.htm)
 
 Usage
 -----
@@ -58,6 +49,7 @@ smooth-bound mesh and click the ![Mannequin icon](icons/mannequin_maya2016.png)
 Mannequin icon to begin. Mannequin doesn't work with NURBS surfaces, only poly
 meshes. However, it does work with poly meshes that have nodes such as the
 Smooth node applied.
+
 
 Screenshots
 -----------
@@ -74,24 +66,33 @@ Rotation channels appear in blue groups, and translation channels appear in
 green groups. A yellow border indicates the currently-selected joint. Fields
 with red backgrounds indicate a keyframe, just like in the Channel Box.
 
-Technical Details
------------------
-### Technology
-The in-viewport manipulators are all done in C++ using the OpenMaya SDK. The
-side-panel UI is done using Python and PySide bindings to Qt. There is a bit of
-MEL involved, but it is mostly used as glue between the C++ and Python parts,
-where necessary.
 
-### Translation Manipulator
-Mannequin includes a custom translation manipulator, built from scratch. This
-component works independently of the rest of the Mannequin code, so it might
-be of separate use to you, depending on your needs.
+Building
+--------
+You will need [Boost](http://www.boost.org/) installed. Mac users can install
+Boost from [Homebrew](http://brew.sh) with the command `brew install boost`.
+Windows users can install Boost using NuGet; the included VS project should
+automatically retrieve the Boost package. Linux users can install Boost from
+the system package manager.
 
-I had to make a custom translation manipulator because the manipulator that
-Maya provides to plug-in developers in the Maya SDK is not the same as the
-normal translation manipulator in Maya. In fact, the SDK manipulator is horribly
-broken and not very customizable.
+### Make (Mac OS X and Linux)
+The Makefile included is copied from a Mac OS X installation of Maya 2016. If
+you are compiling on Linux, you will need to use the Makefile from a Linux
+installation of Maya. If you are compiling for Maya 2015, you will need to edit
+the `TOP` variable in the Makefile to point to Maya 2015's SDK.
 
-This new manipulator only supports single-axis translations, with the axes
-defined by the object's pivot, but the translations should feel the same as the
-normal Maya manipultors.
+Run `make` to compile the plugin `mannequin.bundle` and build the Maya module
+`mannequin_module`.
+
+### Visual Studio (Windows)
+The Visual Studio project included must be compiled using Visual Studio 2012
+Update 4. By default it will compile using the Maya 2016 SDK. If you need to
+compile for Maya 2015:
+1. Go to **View > Property Manager**.
+2. Open the **MannequinWindowsMaya** property sheet under any configuration.
+3. Go to the **User Macros** page.
+4. Edit the `MayaRoot` macro to point at Maya 2015's SDK instead.
+
+### Autodesk documentation links
+* [Building plugins](http://help.autodesk.com/cloudhelp/2016/ENU/Maya-SDK/files/Setting_up_your_build_environment.htm)
+* [Maya modules](http://help.autodesk.com/cloudhelp/2016/ENU/Maya-SDK/files/GUID-130A3F57-2A5D-4E56-B066-6B86F68EEA22.htm)
