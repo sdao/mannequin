@@ -31,7 +31,7 @@ folder.
 points to your `mannequin_module.` For example, if I relocated the
 `mannequin_module` folder to `/Users/Steve`, I would edit `mannequin.mod` to be:
   ```
-  + Mannequin 0.2 /Users/Steve/mannequin_module
+  + Mannequin 0.25 /Users/Steve/mannequin_module
   ```
 
 3. Finally, you need to drop the `mannequin.mod` file into one of Maya's module

@@ -375,8 +375,8 @@ bool MannequinMoveManipulator::intersectManip(MPxManipulatorNode* manip) const {
 
   float handleSize = MFnManip3D::handleSize() / 100.0f; // Probably on [0, 100].
   float handleHeight = viewLength * handleSize * 0.5f;
-  float handleRadius = std::max(handleHeight * 0.4f, 4.0f); // Exaggerated!
-                                                            // Normally * 0.25f.
+  float handleRadius = std::max(handleHeight * 0.3f, 4.0f);
+  // Note: slightly exaggerated; normally handleHeight * 0.25f.
 
   // Determine if we're in range to any of the lines.
   float curDist, t;
