@@ -11,43 +11,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mannequin.cpp" />
-    <ClCompile Include="mannequin_manipulator.cpp" />
-    <ClCompile Include="move_manipulator.cpp" />
+    <ClCompile Include="src\mannequin.cpp" />
+    <ClCompile Include="src\mannequin_manipulator.cpp" />
+    <ClCompile Include="src\move_manipulator.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mannequin.h" />
-    <ClInclude Include="mannequin_manipulator.h" />
-    <ClInclude Include="move_manipulator.h" />
-    <ClInclude Include="stdext.h" />
-    <ClInclude Include="util.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-    <None Include="scripts\mannequin.mel">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="scripts\mannequin.py">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="scripts\mannequin.ui">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="scripts\mannequin_style.py">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="scripts\mannequin_widgets.py">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="scripts\panel_double.ui">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="scripts\panel_single.ui">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="scripts\shelf_Mannequin.mel">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
+    <ClInclude Include="src\mannequin.h" />
+    <ClInclude Include="src\mannequin_manipulator.h" />
+    <ClInclude Include="src\move_manipulator.h" />
+    <ClInclude Include="src\stdext.h" />
+    <ClInclude Include="src\util.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <Keyword>Win32Proj</Keyword>
@@ -70,11 +43,11 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="MayaVersion.props" />
+    <Import Project="MannequinWindowsMaya.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="MayaVersion.props" />
+    <Import Project="MannequinWindowsMaya.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
