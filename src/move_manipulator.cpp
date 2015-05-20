@@ -11,12 +11,6 @@
 #include <maya/MAngle.h>
 #include <maya/MQuaternion.h>
 
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#else
-#include <GL/gl.h>
-#endif
-
 const MTypeId MannequinMoveManipulator::id = MTypeId(0xcafebee);
 
 MannequinMoveManipulator::MannequinMoveManipulator() {}
