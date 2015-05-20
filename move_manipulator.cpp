@@ -75,29 +75,21 @@ void MannequinMoveManipulator::draw(M3dView &view,
   (_origin + (_y * size)).get(y);
   (_origin + (_z * size)).get(z);
 
-  bool selected[3];
-  shouldDrawHandleAsSelected(_glPickableItem + 0, selected[0]);
-  shouldDrawHandleAsSelected(_glPickableItem + 1, selected[1]);
-  shouldDrawHandleAsSelected(_glPickableItem + 2, selected[2]);
-
   view.beginGL();
 
-  colorAndName(view, _glPickableItem + 0, true,
-    selected[0] ? selectedColor() : xColor());
+  colorAndName(view, _glPickableItem + 0, true, xColor());
 	gGLFT->glBegin(MGL_LINES);
 		gGLFT->glVertex3fv(origin);
 		gGLFT->glVertex3fv(x);
 	gGLFT->glEnd();
 
-  colorAndName(view, _glPickableItem + 1, true,
-    selected[1] ? selectedColor() : yColor());
+  colorAndName(view, _glPickableItem + 1, true, yColor());
 	gGLFT->glBegin(MGL_LINES);
 		gGLFT->glVertex3fv(origin);
 		gGLFT->glVertex3fv(y);
 	gGLFT->glEnd();
 
-  colorAndName(view, _glPickableItem + 2, true,
-    selected[2] ? selectedColor() : zColor());
+  colorAndName(view, _glPickableItem + 2, true, zColor());
 	gGLFT->glBegin(MGL_LINES);
 		gGLFT->glVertex3fv(origin);
 		gGLFT->glVertex3fv(z);
@@ -113,6 +105,10 @@ void MannequinMoveManipulator::preDrawUI(const M3dView &view) {
   _yColor = yColor();
   _zColor = zColor();
   _selColor = selectedColor();
+
+  _selected[0] = shouldDrawHandleAsSelected(0);
+  _selected[1] = shouldDrawHandleAsSelected(1);
+  _selected[2] = shouldDrawHandleAsSelected(2);
 }
 
 void MannequinMoveManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
@@ -123,14 +119,9 @@ void MannequinMoveManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
   float handleOfs = size - handleHeight;
   float handleRadius = handleHeight * 0.25f;
 
-  bool selected[3];
-  shouldDrawHandleAsSelected(_glPickableItem + 0, selected[0]);
-  shouldDrawHandleAsSelected(_glPickableItem + 1, selected[1]);
-  shouldDrawHandleAsSelected(_glPickableItem + 2, selected[2]);
-
   beginDrawable(drawManager, _glPickableItem + 0, true);
   drawManager.setLineWidth(MFnManip3D::lineSize());
-  drawManager.setColorIndex(selected[0] ? _selColor : _xColor);
+  drawManager.setColorIndex(_selected[0] ? _selColor : _xColor);
   drawManager.line(_origin, _origin + (_x * size));
   drawManager.cone(_origin + (_x * handleOfs), _x, handleRadius, handleHeight,
     true);
@@ -138,7 +129,7 @@ void MannequinMoveManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
 
   beginDrawable(drawManager, _glPickableItem + 1, true);
   drawManager.setLineWidth(MFnManip3D::lineSize());
-  drawManager.setColorIndex(selected[1] ? _selColor : _yColor);
+  drawManager.setColorIndex(_selected[1] ? _selColor : _yColor);
   drawManager.line(_origin, _origin + (_y * size));
   drawManager.cone(_origin + (_y * handleOfs), _y, handleRadius, handleHeight,
     true);
@@ -146,29 +137,34 @@ void MannequinMoveManipulator::drawUI(MHWRender::MUIDrawManager &drawManager,
 
   beginDrawable(drawManager, _glPickableItem + 2, true);
   drawManager.setLineWidth(MFnManip3D::lineSize());
-  drawManager.setColorIndex(selected[2] ? _selColor : _zColor);
+  drawManager.setColorIndex(_selected[2] ? _selColor : _zColor);
   drawManager.line(_origin, _origin + (_z * size));
   drawManager.cone(_origin + (_z * handleOfs), _z, handleRadius, handleHeight,
     true);
   drawManager.endDrawable();
-
-#ifdef MANIPULATOR_TEST
-  drawManager.beginDrawable();
-  drawManager.setColor(MColor(1.0, 0.0, 1.0));
-  drawManager.line(_opHitBegin, _opHitCurrent);
-  drawManager.line(_opHitBegin, _opHitBegin + _opDiffProj);
-  drawManager.endDrawable();
-#endif
 };
 
 void MannequinMoveManipulator::beginDrawable(
   MHWRender::MUIDrawManager &drawManager,
   unsigned int name,
-  bool pickable) {
+  bool pickable) const {
 #if MAYA_API_VERSION >= 201600
   drawManager.beginDrawable(name, pickable);
 #else
   drawManager.beginDrawable();
+#endif
+}
+
+bool MannequinMoveManipulator::shouldDrawHandleAsSelected(int axis) {
+#if MAYA_API_VERSION >= 201600
+  return MPxManipulatorNode::shouldDrawHandleAsSelected(
+    _glPickableItem + axis,
+    result);
+#else
+  GLuint activeAxis;
+  glActiveName(activeAxis);
+
+  return activeAxis == _glPickableItem + axis;
 #endif
 }
 

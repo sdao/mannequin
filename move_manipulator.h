@@ -29,9 +29,12 @@ public:
   static void* creator();
   static MStatus initialize();
   static const MTypeId id;
-  static void beginDrawable(MHWRender::MUIDrawManager &drawManager,
+
+  // For compatibility with Maya 2015.
+  void beginDrawable(MHWRender::MUIDrawManager &drawManager,
     unsigned int name,
-    bool pickable);
+    bool pickable) const;
+  bool shouldDrawHandleAsSelected(int axis);
 
 private:
   int _translateIndex;
@@ -45,6 +48,7 @@ private:
   short _zColor;
   short _selColor;
   GLuint _glPickableItem;
+  bool _selected[3];
 
   float _manipScale;
   MVector _x;
