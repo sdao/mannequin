@@ -157,9 +157,12 @@ void MannequinMoveManipulator::beginDrawable(
 
 bool MannequinMoveManipulator::shouldDrawHandleAsSelected(int axis) {
 #if MAYA_API_VERSION >= 201600
-  return MPxManipulatorNode::shouldDrawHandleAsSelected(
+  bool result;
+  MPxManipulatorNode::shouldDrawHandleAsSelected(
     _glPickableItem + axis,
     result);
+
+  return result;
 #else
   GLuint activeAxis;
   glActiveName(activeAxis);

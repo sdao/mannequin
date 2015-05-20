@@ -33,7 +33,7 @@ endif
 # Variable definitions
 #
 
-SRCDIR := .
+SRCDIR := src
 DSTDIR := .
 
 mannequin_SOURCES  := $(SRCDIR)/mannequin.cpp \
