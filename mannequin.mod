@@ -1,1 +1,1 @@
-+ Mannequin 0.1 /path/to/mannequin_module
++ Mannequin 0.2 /path/to/mannequin_module

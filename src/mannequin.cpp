@@ -751,7 +751,7 @@ MStatus MannequinContextCommand::appendSyntax() {
 MStatus initializePlugin(MObject obj)
 {
   MStatus status;
-  MFnPlugin plugin(obj, "Steven Dao", "0.1", "Any");
+  MFnPlugin plugin(obj, "Steven Dao", "0.2", "Any");
 
   status = plugin.registerContextCommand("mannequinContext",
     MannequinContextCommand::creator);
