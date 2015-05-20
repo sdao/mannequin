@@ -88,6 +88,7 @@ Run `make` to compile the plugin `mannequin.bundle` and build the Maya module
 The Visual Studio project included must be compiled using Visual Studio 2012
 Update 4. By default it will compile using the Maya 2016 SDK. If you need to
 compile for Maya 2015:
+
 1. Go to **View > Property Manager**.
 2. Open the **MannequinWindowsMaya** property sheet under any configuration.
 3. Go to the **User Macros** page.
