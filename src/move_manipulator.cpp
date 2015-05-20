@@ -8,6 +8,14 @@
 #include <maya/MFnManip3D.h>
 #include <maya/MGLFunctionTable.h>
 #include <maya/MHardwareRenderer.h>
+#include <maya/MAngle.h>
+#include <maya/MQuaternion.h>
+
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
+#include <GL/gl.h>
+#endif
 
 const MTypeId MannequinMoveManipulator::id = MTypeId(0xcafebee);
 
@@ -56,8 +64,8 @@ void MannequinMoveManipulator::draw(M3dView &view,
   M3dView::DisplayStyle style,
   M3dView::DisplayStatus status) {
   static MGLFunctionTable *gGLFT = 0;
-	if (0 == gGLFT) {
-		gGLFT = MHardwareRenderer::theRenderer()->glFunctionTable();
+  if (0 == gGLFT) {
+    gGLFT = MHardwareRenderer::theRenderer()->glFunctionTable();
   }
 
   recalcMetrics();
@@ -69,33 +77,67 @@ void MannequinMoveManipulator::draw(M3dView &view,
   float handleRadius = handleHeight * 0.25f;
 
   float origin[4];
-  float x[4], y[4], z[4];
   _origin.get(origin);
+
+  float x[4], y[4], z[4];
   (_origin + (_x * size)).get(x);
   (_origin + (_y * size)).get(y);
   (_origin + (_z * size)).get(z);
 
   view.beginGL();
 
+  GLUquadricObj* quadric = gluNewQuadric();
+  gluQuadricNormals(quadric, GLU_SMOOTH);
+  gluQuadricTexture(quadric, true);
+  gluQuadricDrawStyle(quadric, GLU_FILL);
+
   colorAndName(view, _glPickableItem + 0, true, xColor());
-	gGLFT->glBegin(MGL_LINES);
-		gGLFT->glVertex3fv(origin);
-		gGLFT->glVertex3fv(x);
-	gGLFT->glEnd();
+  gGLFT->glBegin(MGL_LINES);
+    gGLFT->glVertex3fv(origin);
+    gGLFT->glVertex3fv(x);
+  gGLFT->glEnd();
+  glDrawCone(quadric, _origin + (_x * handleOfs), _x, handleHeight,
+    handleRadius);
 
   colorAndName(view, _glPickableItem + 1, true, yColor());
-	gGLFT->glBegin(MGL_LINES);
-		gGLFT->glVertex3fv(origin);
-		gGLFT->glVertex3fv(y);
-	gGLFT->glEnd();
+  gGLFT->glBegin(MGL_LINES);
+    gGLFT->glVertex3fv(origin);
+    gGLFT->glVertex3fv(y);
+  gGLFT->glEnd();
+  glDrawCone(quadric, _origin + (_y * handleOfs), _y, handleHeight,
+    handleRadius);
 
   colorAndName(view, _glPickableItem + 2, true, zColor());
-	gGLFT->glBegin(MGL_LINES);
-		gGLFT->glVertex3fv(origin);
-		gGLFT->glVertex3fv(z);
-	gGLFT->glEnd();
+  gGLFT->glBegin(MGL_LINES);
+    gGLFT->glVertex3fv(origin);
+    gGLFT->glVertex3fv(z);
+  gGLFT->glEnd();
+  glDrawCone(quadric, _origin + (_z * handleOfs), _z, handleHeight,
+    handleRadius);
+
+  gluDeleteQuadric(quadric);
 
   view.endGL();
+}
+
+void MannequinMoveManipulator::glDrawCone(GLUquadricObj* quadric,
+  MPoint pos,
+  MVector dir,
+  float height,
+  float radius) const {
+  MQuaternion zToDir = MVector::zAxis.rotateTo(dir);
+
+  MVector axis;
+  double rotateRad;
+  zToDir.getAxisAngle(axis, rotateRad);
+
+  double rotateDeg = MAngle(rotateRad).as(MAngle::kDegrees);
+
+  glPushMatrix();
+    glTranslated(pos.x, pos.y, pos.z);
+    glRotated(rotateDeg, axis.x, axis.y, axis.z);
+    gluCylinder(quadric, radius, 0.0, height, 8, 1);
+  glPopMatrix();
 }
 
 void MannequinMoveManipulator::preDrawUI(const M3dView &view) {
@@ -333,7 +375,8 @@ bool MannequinMoveManipulator::intersectManip(MPxManipulatorNode* manip) const {
 
   float handleSize = MFnManip3D::handleSize() / 100.0f; // Probably on [0, 100].
   float handleHeight = viewLength * handleSize * 0.5f;
-  float handleRadius = std::max(handleHeight * 0.25f, 4.0f);
+  float handleRadius = std::max(handleHeight * 0.4f, 4.0f); // Exaggerated!
+                                                            // Normally * 0.25f.
 
   // Determine if we're in range to any of the lines.
   float curDist, t;

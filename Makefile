@@ -69,7 +69,8 @@ depend_mannequin:     INCLUDES := $(INCLUDES) $(mannequin_EXTRA_INCLUDES)
 
 $(mannequin_PLUGIN):  LFLAGS   := $(LFLAGS) $(mannequin_EXTRA_LFLAGS)
 $(mannequin_PLUGIN):  LIBS     := $(LIBS)   -lOpenMaya -lOpenMayaUI \
-	-lOpenMayaAnim -lOpenMayaRender -lFoundation $(mannequin_EXTRA_LIBS)
+	-lOpenMayaAnim -lOpenMayaRender -lFoundation -framework OpenGL \
+	$(mannequin_EXTRA_LIBS)
 
 #
 # Rules definitions

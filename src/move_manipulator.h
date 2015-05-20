@@ -1,6 +1,7 @@
 #pragma once
 
 #include <maya/MPxManipulatorNode.h>
+#include <maya/MPoint.h>
 #include <maya/MVector.h>
 
 class MannequinMoveManipulator : public MPxManipulatorNode {
@@ -12,6 +13,11 @@ public:
 
   void recalcMetrics();
   bool intersectManip(MPxManipulatorNode* manip) const;
+  void glDrawCone(GLUquadricObj* quadric,
+    MPoint pos,
+    MVector dir,
+    float height,
+    float radius) const;
 
   virtual void postConstructor() override;
   virtual void draw(M3dView &view,
