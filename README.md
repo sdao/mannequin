@@ -2,10 +2,13 @@ Mannequin
 ==========
 ![Mannequin icon](icons/mannequin_maya2016.png)
 
-Mannequin is a plugin for Maya that allows you to animate a character rig
-by interacting directly with the character mesh. Simply hover over the mesh,
-and Mannequin will detect and highlight parts of the mesh corresponding to
-different bones in the rig.
+Mannequin is a plugin for Maya that allows you to animate an FK (forward
+kinematics) character rig by interacting directly with the character mesh.
+Simply hover over the mesh, and Mannequin will detect and highlight parts of the
+mesh corresponding to different bones in the rig.
+
+There's not support at this time for IK (inverse kinematics) character rigs,
+but this might change in the future.
 
 Mannequin also includes a convenient side panel that gives you quick access
 to all the joints in your rig and allows you to search through them.
