@@ -63,7 +63,7 @@ global proc mannequinReset() {
 }
 
 global proc mannequinHelp() {
-  showHelp -a "https://github.com/sdao/mannnequin";
+  showHelp -a "https://github.com/sdao/mannequin";
 }
 
 global proc mannequinManipAdjustChanged() {

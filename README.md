@@ -20,7 +20,7 @@ The plugin has been tested on **Maya 2015 SP4** and **Maya 2016** using Mac OS X
 and Windows. It will not work on versions of Maya before 2015 SP4.
 
 If you are on Mac OS X or Windows, there are pre-built binaries available from
-the [Releases](https://github.com/sdao/mannnequin/releases) page on GitHub. If
+the [Releases](https://github.com/sdao/mannequin/releases) page on GitHub. If
 you are on Linux, you will have to compile the plugin from source (see the
 *Building* section below for some more information).
 
