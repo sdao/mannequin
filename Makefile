@@ -16,10 +16,18 @@ ifndef INCL_BUILDRULES
 #
 # Include platform specific build settings
 #
-TOP := /Applications/Autodesk/maya2016/devkit/plug-ins
+TOP := $(MAYA_LOCATION)/devkit/plug-ins
 include $(TOP)/buildrules
 
-C++FLAGS += -std=c++11
+ifeq ($(shell uname),Darwin)
+	LIBGL := -framework OpenGL
+	PLUGIN_OUTPUT := mannequin.bundle
+else
+	LIBGL := -lGL
+	PLUGIN_OUTPUT := mannequin.so
+endif
+
+C++FLAGS += -std=c++11 -ftemplate-depth=256
 
 #
 # Always build the local plug-in when make is invoked from the
@@ -69,7 +77,7 @@ depend_mannequin:     INCLUDES := $(INCLUDES) $(mannequin_EXTRA_INCLUDES)
 
 $(mannequin_PLUGIN):  LFLAGS   := $(LFLAGS) $(mannequin_EXTRA_LFLAGS)
 $(mannequin_PLUGIN):  LIBS     := $(LIBS)   -lOpenMaya -lOpenMayaUI \
-	-lOpenMayaAnim -lOpenMayaRender -lFoundation -framework OpenGL \
+	-lOpenMayaAnim -lOpenMayaRender -lFoundation $(LIBGL) \
 	$(mannequin_EXTRA_LIBS)
 
 #
@@ -89,7 +97,7 @@ $(mannequin_PLUGIN): $(mannequin_OBJECTS)
 	mkdir -p $(mannequin_MODULE)/plug-ins
 	cp -r icons $(mannequin_MODULE)
 	cp -r scripts $(mannequin_MODULE)
-	cp -r mannequin.bundle $(mannequin_MODULE)/plug-ins
+	cp -r $(PLUGIN_OUTPUT) $(mannequin_MODULE)/plug-ins
 
 depend_mannequin:
 	makedepend $(INCLUDES) $(MDFLAGS) -f$(DSTDIR)/Makefile $(mannequin_SOURCES)

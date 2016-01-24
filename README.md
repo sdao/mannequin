@@ -16,8 +16,9 @@ to all the joints in your rig and allows you to search through them.
 
 Installation
 ------------
-The plugin has been tested on **Maya 2015 SP4** and **Maya 2016** using Mac OS X
-and Windows. It will not work on versions of Maya before 2015 SP4.
+The plugin has been tested on **Maya 2015 SP4** and **Maya 2016** using
+Mac OS X, Windows, and Fedora Linux 23. It will not work on versions of Maya
+before 2015 SP4.
 
 If you are on Mac OS X or Windows, there are pre-built binaries available from
 the [Releases](https://github.com/sdao/mannequin/releases) page on GitHub. If
@@ -42,6 +43,7 @@ search directories. You can see these directories by executing the MEL command
 `getenv MAYA_MODULE_PATH` in your Maya command line. Possible locations include:
   * Mac: `/Users/Shared/Autodesk/modules/maya/mannequin.mod`
   * Windows: `%USERPROFILE%\Documents\maya\modules\mannequin.mod`
+  * Linux: `~/maya/modules/mannequin.mod`
 
 
 Usage
@@ -79,10 +81,10 @@ automatically retrieve the Boost package. Linux users can install Boost from
 the system package manager.
 
 ### Make (Mac OS X and Linux)
-The Makefile included is copied from a Mac OS X installation of Maya 2016. If
-you are compiling on Linux, you will need to use the Makefile from a Linux
-installation of Maya. If you are compiling for Maya 2015, you will need to edit
-the `TOP` variable in the Makefile to point to Maya 2015's SDK.
+The Makefile included is copied from a Mac OS X installation of Maya 2016. The
+Makefile can run on both Mac OS X and Linux. You will need to set your
+`MAYA_LOCATION` environmental variable to the directory containing your Maya
+installation (e.g. `/Applications/Autodesk/maya2016` or `/usr/autodesk/maya`).
 
 Run `make` to compile the plugin `mannequin.bundle` and build the Maya module
 `mannequin_module`.
